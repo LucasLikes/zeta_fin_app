@@ -1,30 +1,37 @@
 import 'package:flutter/material.dart';
-import 'core/routes/go_router.dart';  // Importando o GoRouter configurado em go_router.dart
+import 'package:go_router/go_router.dart';
+import 'core/services/dio_client.dart';
+import 'features/goals/controllers/user_auth_controller.dart';
+import 'features/goals/screens/home_screen.dart';
+import 'features/goals/screens/login_screen.dart';
+import 'features/repositories/user_auth_repository.dart';
 
-void main() {
-  runApp(MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Instanciando o AuthController e verificando se o usuário está logado
+  final authController = AuthController(authRepository: AuthRepository(dioClient: DioClient()));
+  bool isLoggedIn = await authController.isLoggedIn();
+
+  // Inicializando o app com o estado de login
+  runApp(MyApp(isLoggedIn: isLoggedIn));
 }
 
-class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+class MyApp extends StatelessWidget {
+  final bool isLoggedIn;
 
-  @override
-  _MyAppState createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  final bool _isDarkMode = true; // Inicia no modo escuro
+  MyApp({required this.isLoggedIn});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      routerConfig: goRouter, // Referenciando o GoRouter configurado em go_router.dart
+      routerConfig: _router, // Configuração do GoRouter
       title: 'ZetaFin App',
-      themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light, // Controlando o tema
+      themeMode: ThemeMode.dark, // Definindo o tema escuro para o início
       darkTheme: ThemeData(
-        brightness: Brightness.dark,
+        brightness: Brightness.dark, // Definindo o tema escuro
         primarySwatch: Colors.green,
-        scaffoldBackgroundColor: Color(0xFF121212), // Fundo escuro confortável
+        scaffoldBackgroundColor: Color(0xFF121212), // Fundo escuro
         appBarTheme: AppBarTheme(
           backgroundColor: Colors.green[800],
           titleTextStyle: TextStyle(color: Colors.white),
@@ -33,10 +40,12 @@ class _MyAppState extends State<MyApp> {
           bodyLarge: TextStyle(color: Color(0xFF4CAF50)), // Verde da marca
           bodyMedium: TextStyle(color: Colors.white70),
           displayLarge: TextStyle(color: Color(0xFF4CAF50)),
+          displayMedium: TextStyle(color: Color(0xFF4CAF50)),
+          displaySmall: TextStyle(color: Color(0xFF4CAF50)),
         ),
       ),
       theme: ThemeData(
-        brightness: Brightness.light,
+        brightness: Brightness.light, // Tema claro
         primarySwatch: Colors.green,
         scaffoldBackgroundColor: Colors.white,
         appBarTheme: AppBarTheme(
@@ -47,8 +56,26 @@ class _MyAppState extends State<MyApp> {
           bodyLarge: TextStyle(color: Color(0xFF4CAF50)), // Verde da marca
           bodyMedium: TextStyle(color: Colors.black87),
           displayLarge: TextStyle(color: Color(0xFF4CAF50)),
+          displayMedium: TextStyle(color: Color(0xFF4CAF50)),
+          displaySmall: TextStyle(color: Color(0xFF4CAF50)),
         ),
       ),
+    );
+  }
+
+  GoRouter get _router {
+    return GoRouter(
+      initialLocation: isLoggedIn ? '/home' : '/login', // Se estiver logado vai para Home, caso contrário para Login
+      routes: [
+        GoRoute(
+          path: '/login',
+          builder: (context, state) => LoginScreen(),
+        ),
+        GoRoute(
+          path: '/home',
+          builder: (context, state) => HomeScreen(),
+        ),
+      ],
     );
   }
 }

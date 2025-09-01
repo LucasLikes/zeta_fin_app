@@ -1,69 +1,142 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:percent_indicator/percent_indicator.dart';
+import 'package:go_router/go_router.dart';
 
 class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    // Obtendo o tamanho da tela para adaptar os componentes
-    double screenWidth = MediaQuery.of(context).size.width;
-
-    // Definir a quantidade de cards por linha com base na largura da tela
-    int columns = screenWidth > 600 ? 2 : 1; // Para telas grandes, dois cards por linha, caso contrário, 1.
+    // Detectando o tipo de dispositivo
+    bool isDesktop = MediaQuery.of(context).size.width > 600;
 
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.green,
+        backgroundColor: Colors.green[800],
         title: Text(
-          'App Dashboard',
+          'Dashboard',
           style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
         ),
-        actions: [
-          IconButton(
-            icon: Icon(CupertinoIcons.settings),
-            onPressed: () {
-              print("Settings clicked");
-            },
+      ),
+      body: Row(
+        children: [
+          // Menu Lateral
+          isDesktop ? Expanded(child: NavigationDrawer()) : SizedBox(),
+          // Corpo Principal
+          Expanded(child: DashboardContent())
+        ],
+      ),
+      drawer: isDesktop ? null : NavigationDrawer(), // Apenas em dispositivos móveis
+    );
+  }
+}
+
+class NavigationDrawer extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 250,
+      color: Color(0xFF121212), // Fundo escuro
+      child: Drawer(
+        child: Column(
+          children: [
+            // Avatar e Nome
+            UserInfo(),
+            // Menu de navegação
+            NavigationItem(
+              icon: Icons.dashboard,
+              label: 'Dashboard',
+              onTap: () => context.go('/home'),
+            ),
+            NavigationItem(
+              icon: Icons.list,
+              label: 'Metas',
+              onTap: () => context.go('/goals'),
+            ),
+            NavigationItem(
+              icon: Icons.settings,
+              label: 'Configurações',
+              onTap: () => context.go('/settings'),
+            ),
+            NavigationItem(
+              icon: Icons.exit_to_app,
+              label: 'Logout',
+              onTap: () => context.go('/login'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class UserInfo extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(20.0),
+      child: Column(
+        children: [
+          CircleAvatar(
+            radius: 40,
+            backgroundImage: NetworkImage('https://www.example.com/avatar.jpg'), // Substitua com a URL da imagem do usuário
+          ),
+          SizedBox(height: 10),
+          Text(
+            'João Silva', // Nome do usuário
+            style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+          SizedBox(height: 10),
+          Text(
+            'Desenvolvedor Flutter', // Cargo ou descrição
+            style: GoogleFonts.poppins(fontSize: 14, color: Colors.white70),
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              // Card com informações rápidas (Progressos)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(child: _buildStatusCard("Metas Concluídas", 0.75, Colors.green)),
-                  SizedBox(width: 10), // Espaçamento entre os cards
-                  Expanded(child: _buildStatusCard("Saldo", 0.55, Colors.blue)),
-                ],
-              ),
-              SizedBox(height: 20),
+    );
+  }
+}
 
-              // Gráfico de progresso
-              _buildProgressGraph(),
+class NavigationItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Function onTap;
 
-              SizedBox(height: 30),
+  const NavigationItem({required this.icon, required this.label, required this.onTap});
 
-              // Lista de atividades
-              _buildActivityList(columns),
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      onTap: () => onTap(),
+      leading: Icon(icon, color: Colors.white),
+      title: Text(label, style: GoogleFonts.poppins(color: Colors.white)),
+    );
+  }
+}
 
-              SizedBox(height: 50),
-            ],
-          ),
+class DashboardContent extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Cards de Progresso
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildStatusCard("Metas Concluídas", 0.75, Colors.green),
+                _buildStatusCard("Saldo", 0.55, Colors.blue),
+              ],
+            ),
+            SizedBox(height: 20),
+            // Gráfico de Progresso
+            _buildProgressGraph(),
+            SizedBox(height: 30),
+            // Atividades recentes
+            _buildActivityList(),
+          ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          print("FAB Clicked");
-        },
-        child: Icon(Icons.add),
-        backgroundColor: Colors.green,
       ),
     );
   }
@@ -141,29 +214,13 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildActivityList(int columns) {
-    // Modificando o layout da lista de atividades conforme o número de colunas
-    return GridView.builder(
-      shrinkWrap: true, // Permite que o grid ocupe apenas o espaço necessário
-      physics: NeverScrollableScrollPhysics(), // Desabilita a rolagem para não interferir com o SingleChildScrollView
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: columns, // Definido dinamicamente com base na largura da tela
-        crossAxisSpacing: 10, // Espaçamento entre as colunas
-        mainAxisSpacing: 10, // Espaçamento entre as linhas
-        childAspectRatio: 1.2, // Proporção do card para que ele se ajuste bem
-      ),
-      itemCount: 3, // Número de atividades
-      itemBuilder: (context, index) {
-        return _buildActivityCard(
-          'Meta ${index + 1}',
-          index == 0
-              ? 'Você alcançou 80% da sua meta!'
-              : (index == 1 ? 'Novo objetivo adicionado' : 'Progresso de 50%'),
-          index == 0
-              ? Colors.green
-              : (index == 1 ? Colors.blue : Colors.orange),
-        );
-      },
+  Widget _buildActivityList() {
+    return Column(
+      children: [
+        _buildActivityCard('Meta 1', 'Você alcançou 80% da sua meta!', Colors.green),
+        _buildActivityCard('Meta 2', 'Novo objetivo adicionado', Colors.blue),
+        _buildActivityCard('Meta 3', 'Progresso de 50%', Colors.orange),
+      ],
     );
   }
 
