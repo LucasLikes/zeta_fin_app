@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:zeta_fin_app/core/routes/go_router.dart';
 
 void main() {
@@ -7,19 +6,17 @@ void main() {
 }
 
 class MyApp extends StatefulWidget {
+  const MyApp({super.key});
+
   @override
   _MyAppState createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
-  bool _isDarkMode = true; // Inicia no modo escuro
+  final bool _isDarkMode = true; // Inicia no modo escuro
 
   // Função para alternar entre o tema claro e escuro
-  void _toggleTheme() {
-    setState(() {
-      _isDarkMode = !_isDarkMode;
-    });
-  }
+  
 
   @override
   Widget build(BuildContext context) {

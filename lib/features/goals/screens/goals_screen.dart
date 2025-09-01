@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:dio/dio.dart';
 import 'package:zeta_fin_app/core/services/dio_client.dart';
 
 class GoalsScreen extends StatefulWidget {
