@@ -31,4 +31,22 @@ class AuthRepository {
       throw Exception('Erro ao tentar fazer login: $e');
     }
   }
+
+  Future<void> cadastrar(String name, String email, String password) async {
+    try {
+      final response = await dioClient.post('/api/Users', data: {
+        'name': name,
+        'email': email,
+        'password': password,
+      });
+
+      if (response.statusCode == 201) {
+        // Sucesso, usuário cadastrado
+      } else {
+        throw Exception('Falha ao cadastrar');
+      }
+    } catch (e) {
+      throw Exception('Erro ao tentar cadastrar: $e');
+    }
+  }
 }

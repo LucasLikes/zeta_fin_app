@@ -23,4 +23,13 @@ class AuthController {
       rethrow; // Re-throw para capturar no UI se necessário
     }
   }
+
+  Future<void> cadastrar(String name, String email, String password) async {
+    try {
+      // Chama o repositório para fazer o cadastro
+      await authRepository.cadastrar(name, email, password);
+    } catch (e) {
+      throw Exception("Erro ao cadastrar: $e");
+    }
+  }
 }

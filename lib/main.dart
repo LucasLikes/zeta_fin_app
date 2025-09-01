@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:zeta_fin_app/core/routes/go_router.dart';
+import 'core/routes/go_router.dart';  // Importando o GoRouter configurado em go_router.dart
 
 void main() {
   runApp(MyApp());
@@ -15,13 +15,10 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final bool _isDarkMode = true; // Inicia no modo escuro
 
-  // Função para alternar entre o tema claro e escuro
-  
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      routerConfig: goRouter, // Configuração da navegação com GoRouter
+      routerConfig: goRouter, // Referenciando o GoRouter configurado em go_router.dart
       title: 'ZetaFin App',
       themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light, // Controlando o tema
       darkTheme: ThemeData(
@@ -36,8 +33,6 @@ class _MyAppState extends State<MyApp> {
           bodyLarge: TextStyle(color: Color(0xFF4CAF50)), // Verde da marca
           bodyMedium: TextStyle(color: Colors.white70),
           displayLarge: TextStyle(color: Color(0xFF4CAF50)),
-          displayMedium: TextStyle(color: Color(0xFF4CAF50)),
-          displaySmall: TextStyle(color: Color(0xFF4CAF50)),
         ),
       ),
       theme: ThemeData(
@@ -52,8 +47,6 @@ class _MyAppState extends State<MyApp> {
           bodyLarge: TextStyle(color: Color(0xFF4CAF50)), // Verde da marca
           bodyMedium: TextStyle(color: Colors.black87),
           displayLarge: TextStyle(color: Color(0xFF4CAF50)),
-          displayMedium: TextStyle(color: Color(0xFF4CAF50)),
-          displaySmall: TextStyle(color: Color(0xFF4CAF50)),
         ),
       ),
     );

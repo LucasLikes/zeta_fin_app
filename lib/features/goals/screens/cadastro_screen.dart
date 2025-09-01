@@ -1,22 +1,23 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:go_router/go_router.dart';
 import 'package:zeta_fin_app/core/services/dio_client.dart';
-import 'package:zeta_fin_app/features/goals/controllers/user_auth_controller.dart';
+import 'package:go_router/go_router.dart';
 import '../../repositories/user_auth_repository.dart';
+import '../controllers/user_auth_controller.dart';
 
-class LoginScreen extends StatefulWidget {
+class CadastroScreen extends StatefulWidget {
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  _CadastroScreenState createState() => _CadastroScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _CadastroScreenState extends State<CadastroScreen> {
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
   bool _isObscured = true;
   late AuthController _authController;
-  String? _errorMessage;
 
   @override
   void initState() {
@@ -31,49 +32,36 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
-  void _login() async {
+  void _cadastro() async {
+    String name = _nameController.text;
     String email = _emailController.text;
     String password = _passwordController.text;
 
-    if (email.isEmpty || password.isEmpty) {
-      setState(() {
-        _errorMessage = 'Por favor, preencha todos os campos!';
-      });
+    if (name.isEmpty || email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Por favor, preencha todos os campos!')));
+      return;
+    }
+
+    if (!_validateEmail(email)) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('E-mail inválido!')));
       return;
     }
 
     try {
-      await _authController.login(email, password);
-      
-      // Reset any previous error message
-      setState(() {
-        _errorMessage = null;
-      });
+      // Chama o método para fazer o cadastro
+      await _authController.cadastrar(name, email, password);
 
-      // Mensagem de sucesso após o login bem-sucedido
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Login bem-sucedido!')),
-      );
-
-      // Transição suave para a HomeScreen com GoRouter
-      context.go('/home'); // Navegação usando GoRouter
+      // Redireciona para a tela de login após o cadastro
+      context.go('/login'); // Redireciona para a tela de Login
     } catch (e) {
-      // Mensagens personalizadas de erro para login
-      String errorMessage = 'Erro de login: Verifique suas credenciais.';
-
-      if (e.toString().contains('401')) {
-        errorMessage = 'E-mail ou senha incorretos!';
-      } else if (e.toString().contains('NetworkException')) {
-        errorMessage = 'Erro de conexão. Verifique sua internet.';
-      } else {
-        errorMessage = 'Erro desconhecido. Tente novamente.';
-      }
-
-      // Exibir erro
-      setState(() {
-        _errorMessage = errorMessage;
-      });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao cadastrar: $e')));
     }
+  }
+
+  bool _validateEmail(String email) {
+    // Expressão regular para validar e-mail
+    RegExp regex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
+    return regex.hasMatch(email);
   }
 
   @override
@@ -85,8 +73,8 @@ class _LoginScreenState extends State<LoginScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color.fromARGB(255, 26, 95, 30), // Verde escuro no topo
-              Color.fromARGB(255, 47, 107, 51), // Verde mais claro no fundo
+              Color.fromARGB(255, 26, 95, 30),
+              Color.fromARGB(255, 47, 107, 51),
             ],
             stops: [0.0, 1.0],
           ),
@@ -131,12 +119,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                                 children: [
                                   TextSpan(
-                                    text: 'Bem-vindo ',
+                                    text: 'Crie sua conta ',
                                     style: TextStyle(color: Colors.black),
-                                  ),
-                                  TextSpan(
-                                    text: 'de volta!',
-                                    style: TextStyle(color: Color.fromARGB(255, 74, 212, 81)),
                                   ),
                                 ],
                               ),
@@ -144,11 +128,38 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           SizedBox(height: 40),
 
+                          // Campo de Nome
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Nome',
+                              style: GoogleFonts.poppins(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w500,
+                                color: Color.fromARGB(255, 141, 141, 141),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          TextField(
+                            controller: _nameController,
+                            decoration: InputDecoration(
+                              labelStyle: TextStyle(color: Colors.black),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.black, width: 1),
+                              ),
+                              filled: true,
+                              fillColor: Colors.white,
+                            ),
+                          ),
+                          SizedBox(height: 20),
+
                           // Campo de E-mail
                           Align(
                             alignment: Alignment.centerLeft,
                             child: Text(
-                              'Login',
+                              'E-mail',
                               style: GoogleFonts.poppins(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w500,
@@ -204,44 +215,21 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                           ),
-                          SizedBox(height: 20),
-
-                          // Exibir mensagem de erro, se houver
-                          if (_errorMessage != null)
-                            Container(
-                              padding: EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.redAccent.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.error, color: Colors.red, size: 18),
-                                  SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      _errorMessage!,
-                                      style: TextStyle(color: Colors.red, fontSize: 14),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
                           SizedBox(height: 40),
 
-                          // Botão de Login
+                          // Botão de Cadastro
                           ElevatedButton(
-                            onPressed: _login,
+                            onPressed: _cadastro,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Color(0xFF388E3C),
                               padding: EdgeInsets.symmetric(vertical: 15, horizontal: 120),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              elevation: 5, // Sombra suave
+                              elevation: 5,
                             ),
                             child: Text(
-                              'Entrar',
+                              'Cadastrar',
                               style: GoogleFonts.poppins(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
@@ -251,29 +239,29 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           SizedBox(height: 20),
 
-                          // Link para cadastro
+                          // Link para Login
                           TextButton(
                             onPressed: () {
                               // Ação quando o link for clicado
-                              context.go('/cadastro'); // Navegação para a tela de cadastro
+                              context.go('/'); // Navega para a tela de login
                             },
                             child: RichText(
                               text: TextSpan(
                                 style: GoogleFonts.poppins(
-                                  color: Color(0xFF388E3C), // Cor verde para o texto inteiro por padrão
+                                  color: Color(0xFF388E3C),
                                   fontSize: 14,
                                 ),
                                 children: [
                                   TextSpan(
-                                    text: 'Ainda não tem conta? ',
+                                    text: 'Já tem uma conta? ',
                                     style: TextStyle(
-                                      color: Colors.black, // Cor preta para a primeira parte da frase
+                                      color: Colors.black,
                                     ),
                                   ),
                                   TextSpan(
-                                    text: 'Cadastre-se',
+                                    text: 'Faça login',
                                     style: TextStyle(
-                                      color: Color(0xFF388E3C), // Cor verde para a palavra "Cadastre-se"
+                                      color: Color(0xFF388E3C), // Verde para "Login"
                                     ),
                                   ),
                                 ],
