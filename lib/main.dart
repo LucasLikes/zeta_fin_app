@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'core/services/dio_client.dart';
 import 'features/goals/controllers/user_auth_controller.dart';
+import 'features/goals/screens/login/cadastro_screen.dart';
 import 'features/goals/screens/home_screen.dart';
-import 'features/goals/screens/login_screen.dart';
+import 'features/goals/screens/login/forgot_password_screen.dart';
+import 'features/goals/screens/login/login_screen.dart';
 import 'features/repositories/user_auth_repository.dart';
 
 void main() async {
@@ -74,6 +76,16 @@ class MyApp extends StatelessWidget {
         GoRoute(
           path: '/home',
           builder: (context, state) => HomeScreen(),
+        ),
+        GoRoute(
+          path: '/cadastro',
+          builder: (context, state) => CadastroScreen(),
+      ),
+        GoRoute(
+          path: '/forgot-password',
+          builder: (BuildContext context, GoRouterState state) {
+            return ForgotPasswordScreen(); // A tela que você criou para "Esqueci a Senha"
+          },
         ),
       ],
     );

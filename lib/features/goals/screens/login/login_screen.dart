@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:zeta_fin_app/core/services/dio_client.dart';
 import 'package:zeta_fin_app/features/goals/controllers/user_auth_controller.dart';
-import '../../repositories/user_auth_repository.dart';
+import '../../../repositories/user_auth_repository.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -250,6 +250,21 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           SizedBox(height: 20),
+
+                          // Link para "Esqueci a senha?"
+                          TextButton(
+                            onPressed: () {
+                              // Navegar para a tela de Esqueci a Senha
+                              context.go('/forgot-password'); // Rota configurada no GoRouter
+                            },
+                            child: Text(
+                              'Esqueci a senha?',
+                              style: GoogleFonts.poppins(
+                                color: Color(0xFF388E3C), // Cor verde para o texto
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
 
                           // Link para cadastro
                           TextButton(

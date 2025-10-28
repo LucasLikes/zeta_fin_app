@@ -78,16 +78,16 @@ class UserInfo extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 40,
-            backgroundImage: NetworkImage('https://www.example.com/avatar.jpg'), // Substitua com a URL da imagem do usuário
+            backgroundImage: NetworkImage('https://img.freepik.com/vetores-premium/ilustracao-de-avatar-de-estudante-icone-de-perfil-de-usuario-avatar-de-jovem_118339-4402.jpg'), // Substitua com a URL da imagem do usuário
           ),
           SizedBox(height: 10),
           Text(
-            'João Silva', // Nome do usuário
+            'Lucas Likes', // Nome do usuário
             style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
           ),
           SizedBox(height: 10),
           Text(
-            'Desenvolvedor Flutter', // Cargo ou descrição
+            'Desenvolvedor', // Cargo ou descrição
             style: GoogleFonts.poppins(fontSize: 14, color: Colors.white70),
           ),
         ],

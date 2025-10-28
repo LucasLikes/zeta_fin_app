@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:zeta_fin_app/core/services/dio_client.dart';
 import 'package:go_router/go_router.dart';
-import '../../repositories/user_auth_repository.dart';
-import '../controllers/user_auth_controller.dart';
+import '../../../repositories/user_auth_repository.dart';
+import '../../controllers/user_auth_controller.dart';
 
 class CadastroScreen extends StatefulWidget {
   @override
