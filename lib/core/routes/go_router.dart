@@ -1,7 +1,7 @@
 import 'package:go_router/go_router.dart';
 import 'package:zeta_fin_app/features/goals/screens/login/forgot_response.dart';
 import '../../features/goals/screens/login/mobile/login_mobile_layout.dart';
-import '../../features/goals/screens/home_screen.dart';
+import '../../features/goals/screens/home/mobile/home_screen.dart';
 import '../../features/goals/screens/login/mobile/cadastro_screen.dart';  // Importe a tela de Cadastro
 
 final GoRouter goRouter = GoRouter(
@@ -15,7 +15,7 @@ final GoRouter goRouter = GoRouter(
     // Rota para a página Home após o login
     GoRoute(
       path: '/home',
-      builder: (context, state) => HomeScreen(),
+      builder: (context, state) => HomeMobileScreen(),
     ),
     // Rota para a página de Cadastro
     GoRoute(
