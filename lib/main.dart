@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:zeta_fin_app/features/goals/screens/login/cadastro_responsive_screen.dart';
+import 'package:zeta_fin_app/features/goals/screens/login/forgot_response.dart';
+import 'package:zeta_fin_app/features/goals/screens/login/login_responsive_screen.dart';
 import 'core/services/dio_client.dart';
 import 'features/goals/controllers/user_auth_controller.dart';
-import 'features/goals/screens/login/cadastro_screen.dart';
 import 'features/goals/screens/home_screen.dart';
-import 'features/goals/screens/login/forgot_password_screen.dart';
-import 'features/goals/screens/login/login_screen.dart';
+import 'features/goals/screens/login/mobile/forgot_password_screen.dart';
 import 'features/repositories/user_auth_repository.dart';
 
 void main() async {
@@ -71,7 +72,7 @@ class MyApp extends StatelessWidget {
       routes: [
         GoRoute(
           path: '/login',
-          builder: (context, state) => LoginScreen(),
+          builder: (context, state) => LoginResponsiveScreen(),
         ),
         GoRoute(
           path: '/home',
@@ -79,12 +80,12 @@ class MyApp extends StatelessWidget {
         ),
         GoRoute(
           path: '/cadastro',
-          builder: (context, state) => CadastroScreen(),
+          builder: (context, state) => CadastroResponsiveScreen(),
       ),
         GoRoute(
           path: '/forgot-password',
           builder: (BuildContext context, GoRouterState state) {
-            return ForgotPasswordScreen(); // A tela que você criou para "Esqueci a Senha"
+            return ForgotPasswordResponsiveScreen();
           },
         ),
       ],
