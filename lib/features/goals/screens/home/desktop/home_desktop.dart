@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'package:zeta_fin_app/core/theme/app_colors.dart';
+import 'package:zeta_fin_app/features/goals/screens/goal/desktop/goals_desktop.dart';
 import 'package:zeta_fin_app/features/goals/widgets/menu_desktop.dart';
 import 'package:zeta_fin_app/features/goals/widgets/user_menu_desktop.dart';
+// Importe a tela de metas para usar o popup
 
 class HomeDesktopScreen extends StatefulWidget {
   const HomeDesktopScreen({super.key});
@@ -263,206 +265,143 @@ class _HomeDesktopScreenState extends State<HomeDesktopScreen> {
   }
 
   // ====================== SEÇÃO DE METAS ==============================
-Widget _buildGoalsSection() {
-  return Row(
-    children: [
-      Expanded(
-        flex: 2,
-        child: _buildGoalCard(
-          title: "Viagem para Paris",
-          currentValue: 8500.00,
-          targetValue: 15000.00,
-          deadline: DateTime(2025, 12, 31),
-          color: const Color(0xFF9C27B0),
+  Widget _buildGoalsSection() {
+    return Row(
+      children: [
+        Expanded(
+          flex: 2,
+          child: _buildGoalCard(
+            title: "Viagem para Paris",
+            currentValue: 8500.00,
+            targetValue: 15000.00,
+            deadline: DateTime(2025, 12, 31),
+            color: const Color(0xFF9C27B0),
+          ),
         ),
-      ),
-      const SizedBox(width: 16),
-      Expanded(
-        flex: 2,
-        child: _buildGoalCard(
-          title: "Notebook Novo",
-          currentValue: 2800.00,
-          targetValue: 5000.00,
-          deadline: DateTime(2025, 8, 15),
-          color: const Color(0xFF2196F3),
+        const SizedBox(width: 16),
+        Expanded(
+          flex: 2,
+          child: _buildGoalCard(
+            title: "Notebook Novo",
+            currentValue: 2800.00,
+            targetValue: 5000.00,
+            deadline: DateTime(2025, 8, 15),
+            color: const Color(0xFF2196F3),
+          ),
         ),
-      ),
-      const SizedBox(width: 16),
-      Expanded(
-        flex: 1,
-        // 👉 Aqui passamos o contexto corretamente
-        child: _buildQuickGoalStats(context),
-      ),
-    ],
-  );
-}
-
-Widget _buildQuickGoalStats(BuildContext context) {
-  return GestureDetector(
-    onTap: () => _showGoalsPopup(context),
-    child: Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.primary,
-            AppColors.primary.withOpacity(0.8),
-          ],
+        const SizedBox(width: 16),
+        Expanded(
+          flex: 1,
+          child: _buildQuickGoalStats(context),
         ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.flag_rounded,
-              color: Colors.white,
-              size: 28,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            "Total de Metas",
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: Colors.white.withOpacity(0.9),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            "5",
-            style: GoogleFonts.inter(
-              fontSize: 36,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Divider(color: Colors.white.withOpacity(0.3), height: 1),
-          const SizedBox(height: 20),
-          _buildQuickStat("Concluídas", "2", Icons.check_circle_rounded),
-          const SizedBox(height: 12),
-          _buildQuickStat("Em Andamento", "3", Icons.timelapse_rounded),
-        ],
-      ),
-    ),
-  );
-}
+      ],
+    );
+  }
 
-/// ====================== POPUP DE METAS MOCKADAS ==============================
-void _showGoalsPopup(BuildContext context) {
-  // Usamos um StateSetter para atualizar o estado dentro do modal
-  List<Map<String, dynamic>> mockGoals = [
-    {"titulo": "Ler 12 livros no ano", "status": "Em andamento", "pinned": false},
-    {"titulo": "Economizar R\$ 5.000", "status": "Concluída", "pinned": true},
-    {"titulo": "Fazer 3 cursos online", "status": "Em andamento", "pinned": false},
-    {"titulo": "Correr 100km no mês", "status": "Em andamento", "pinned": false},
-    {"titulo": "Aprender Flutter", "status": "Concluída", "pinned": false},
-  ];
-
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (context) {
-      return StatefulBuilder(
-        builder: (context, setModalState) {
-          return DraggableScrollableSheet(
-            expand: false,
-            initialChildSize: 0.6,
-            maxChildSize: 0.9,
-            minChildSize: 0.4,
-            builder: (context, scrollController) {
-              return Container(
+  Widget _buildQuickGoalStats(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () {
+          // Chama o popup moderno de metas
+          GoalsDesktopScreen.showGoalsForPinPopup(context);
+        },
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.primary,
+                AppColors.primary.withOpacity(0.8),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withOpacity(0.3),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(24)),
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                padding: const EdgeInsets.all(16),
-                child: Column(
+                child: const Icon(
+                  Icons.flag_rounded,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                "Total de Metas",
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: Colors.white.withOpacity(0.9),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "5",
+                style: GoogleFonts.inter(
+                  fontSize: 36,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Divider(color: Colors.white.withOpacity(0.3), height: 1),
+              const SizedBox(height: 20),
+              _buildQuickStat("Concluídas", "2", Icons.check_circle_rounded),
+              const SizedBox(height: 12),
+              _buildQuickStat("Em Andamento", "3", Icons.timelapse_rounded),
+              const SizedBox(height: 16),
+              // Indicador de clique
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(
-                      width: 40,
-                      height: 5,
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                    const Icon(
+                      Icons.push_pin_outlined,
+                      color: Colors.white,
+                      size: 16,
                     ),
+                    const SizedBox(width: 6),
                     Text(
-                      "Minhas Metas",
+                      "Gerenciar Metas",
                       style: GoogleFonts.inter(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Expanded(
-                      child: ListView.builder(
-                        controller: scrollController,
-                        itemCount: mockGoals.length,
-                        itemBuilder: (context, index) {
-                          final goal = mockGoals[index];
-                          return ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                                vertical: 4, horizontal: 8),
-                            leading: Icon(
-                              goal["status"] == "Concluída"
-                                  ? Icons.check_circle
-                                  : Icons.timelapse,
-                              color: goal["status"] == "Concluída"
-                                  ? Colors.green
-                                  : Colors.orange,
-                            ),
-                            title: Text(goal["titulo"]),
-                            subtitle: Text(goal["status"]),
-                            trailing: IconButton(
-                              icon: Icon(
-                                goal["pinned"]
-                                    ? Icons.push_pin
-                                    : Icons.push_pin_outlined,
-                                color:
-                                    goal["pinned"] ? Colors.blue : Colors.grey,
-                              ),
-                              onPressed: () {
-                                setModalState(() {
-                                  goal["pinned"] = !goal["pinned"];
-                                });
-                              },
-                            ),
-                          );
-                        },
+                        fontSize: 12,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
                 ),
-              );
-            },
-          );
-        },
-      );
-    },
-  );
-}
-
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _buildGoalCard({
     required String title,

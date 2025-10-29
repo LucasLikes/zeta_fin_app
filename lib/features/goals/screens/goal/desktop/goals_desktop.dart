@@ -9,6 +9,15 @@ class GoalsDesktopScreen extends StatefulWidget {
 
   @override
   State<GoalsDesktopScreen> createState() => _GoalsDesktopScreenState();
+
+  // ===== MÉTODO ESTÁTICO PARA ABRIR O POPUP DE PIN =====
+  static void showGoalsForPinPopup(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.6),
+      builder: (context) => _GoalsForPinDialog(),
+    );
+  }
 }
 
 class _GoalsDesktopScreenState extends State<GoalsDesktopScreen> {
@@ -52,7 +61,7 @@ class _GoalsDesktopScreenState extends State<GoalsDesktopScreen> {
                       ],
                     ),
                   ),
-
+                  
                   // Botão Flutuante para Adicionar Meta
                   Positioned(
                     right: 32,
@@ -248,14 +257,11 @@ class _GoalsDesktopScreenState extends State<GoalsDesktopScreen> {
               const SizedBox(width: 8),
               _buildFilterChip("Concluídas", _filterStatus == "Concluídas"),
               const SizedBox(width: 8),
-              _buildFilterChip(
-                "Compartilhadas",
-                _filterStatus == "Compartilhadas",
-              ),
+              _buildFilterChip("Compartilhadas", _filterStatus == "Compartilhadas"),
             ],
           ),
         ),
-
+        
         // Controles de Visualização
         Container(
           padding: const EdgeInsets.all(4),
@@ -317,9 +323,7 @@ class _GoalsDesktopScreenState extends State<GoalsDesktopScreen> {
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0xFF2196F3).withOpacity(0.1)
-              : Colors.transparent,
+          color: isSelected ? const Color(0xFF2196F3).withOpacity(0.1) : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
@@ -464,13 +468,11 @@ class _GoalsDesktopScreenState extends State<GoalsDesktopScreen> {
     final prazo = goal["prazo"] as DateTime;
     final diasRestantes = prazo.difference(DateTime.now()).inDays;
     final status = goal["status"] as String;
-
+    
     // Calcular aporte mensal necessário
     final faltante = valorTotal - valorAtual;
     final mesesRestantes = (diasRestantes / 30).ceil();
-    final aporteMensalNecessario = mesesRestantes > 0
-        ? faltante / mesesRestantes
-        : 0.0;
+    final aporteMensalNecessario = mesesRestantes > 0 ? faltante / mesesRestantes : 0.0;
 
     Color statusColor;
     if (status == "Concluída") {
@@ -486,7 +488,9 @@ class _GoalsDesktopScreenState extends State<GoalsDesktopScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: (goal["color"] as Color).withOpacity(0.2)),
+        border: Border.all(
+          color: (goal["color"] as Color).withOpacity(0.2),
+        ),
         boxShadow: [
           BoxShadow(
             color: (goal["color"] as Color).withOpacity(0.1),
@@ -531,21 +535,11 @@ class _GoalsDesktopScreenState extends State<GoalsDesktopScreen> {
                     ),
                   const SizedBox(width: 8),
                   PopupMenuButton(
-                    icon: Icon(
-                      Icons.more_vert,
-                      color: Colors.grey[400],
-                      size: 20,
-                    ),
+                    icon: Icon(Icons.more_vert, color: Colors.grey[400], size: 20),
                     itemBuilder: (context) => [
                       const PopupMenuItem(value: 1, child: Text("Editar")),
-                      const PopupMenuItem(
-                        value: 2,
-                        child: Text("Adicionar Aporte"),
-                      ),
-                      const PopupMenuItem(
-                        value: 3,
-                        child: Text("Ver Histórico"),
-                      ),
+                      const PopupMenuItem(value: 2, child: Text("Adicionar Aporte")),
+                      const PopupMenuItem(value: 3, child: Text("Ver Histórico")),
                       const PopupMenuItem(value: 4, child: Text("Excluir")),
                     ],
                   ),
@@ -553,9 +547,9 @@ class _GoalsDesktopScreenState extends State<GoalsDesktopScreen> {
               ),
             ],
           ),
-
+          
           const SizedBox(height: 16),
-
+          
           // Nome da Meta
           Text(
             goal["nome"] as String,
@@ -567,17 +561,20 @@ class _GoalsDesktopScreenState extends State<GoalsDesktopScreen> {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-
+          
           const SizedBox(height: 4),
-
+          
           // Categoria
           Text(
             goal["categoria"] as String,
-            style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[600]),
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              color: Colors.grey[600],
+            ),
           ),
-
+          
           const Spacer(),
-
+          
           // Progresso
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -592,13 +589,16 @@ class _GoalsDesktopScreenState extends State<GoalsDesktopScreen> {
               ),
               Text(
                 "de R\$ ${valorTotal.toStringAsFixed(0)}",
-                style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[600]),
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
               ),
             ],
           ),
-
+          
           const SizedBox(height: 12),
-
+          
           // Barra de Progresso
           LinearPercentIndicator(
             padding: EdgeInsets.zero,
@@ -609,9 +609,9 @@ class _GoalsDesktopScreenState extends State<GoalsDesktopScreen> {
             barRadius: const Radius.circular(10),
             animation: true,
           ),
-
+          
           const SizedBox(height: 12),
-
+          
           // Info adicional
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -625,7 +625,9 @@ class _GoalsDesktopScreenState extends State<GoalsDesktopScreen> {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    status == "Concluída" ? "Concluída" : "$diasRestantes dias",
+                    status == "Concluída" 
+                        ? "Concluída"
+                        : "$diasRestantes dias",
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       color: Colors.grey[600],
@@ -651,7 +653,7 @@ class _GoalsDesktopScreenState extends State<GoalsDesktopScreen> {
               ),
             ],
           ),
-
+          
           if (status != "Concluída" && aporteMensalNecessario > 0) ...[
             const SizedBox(height: 12),
             Container(
@@ -696,7 +698,7 @@ class _GoalsDesktopScreenState extends State<GoalsDesktopScreen> {
     final valorTotal = goal["valorTotal"] as double;
     final percent = valorAtual / valorTotal;
     final status = goal["status"] as String;
-
+    
     Color statusColor;
     if (status == "Concluída") {
       statusColor = const Color(0xFF4CAF50);
@@ -746,11 +748,7 @@ class _GoalsDesktopScreenState extends State<GoalsDesktopScreen> {
                       ),
                     ),
                     if (goal["compartilhada"] == true)
-                      const Icon(
-                        Icons.people_rounded,
-                        color: Colors.purple,
-                        size: 18,
-                      ),
+                      const Icon(Icons.people_rounded, color: Colors.purple, size: 18),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -838,16 +836,14 @@ class _GoalsDesktopScreenState extends State<GoalsDesktopScreen> {
   Widget _buildGoalsTimeline(List<Map<String, dynamic>> goals) {
     // Ordenar por prazo
     final sortedGoals = List<Map<String, dynamic>>.from(goals)
-      ..sort(
-        (a, b) => (a["prazo"] as DateTime).compareTo(b["prazo"] as DateTime),
-      );
+      ..sort((a, b) => (a["prazo"] as DateTime).compareTo(b["prazo"] as DateTime));
 
     return Column(
       children: sortedGoals.asMap().entries.map((entry) {
         final index = entry.key;
         final goal = entry.value;
         final isLast = index == sortedGoals.length - 1;
-
+        
         return _buildTimelineItem(goal, isLast);
       }).toList(),
     );
@@ -859,7 +855,7 @@ class _GoalsDesktopScreenState extends State<GoalsDesktopScreen> {
     final percent = valorAtual / valorTotal;
     final prazo = goal["prazo"] as DateTime;
     final status = goal["status"] as String;
-
+    
     Color statusColor;
     if (status == "Concluída") {
       statusColor = const Color(0xFF4CAF50);
@@ -892,11 +888,15 @@ class _GoalsDesktopScreenState extends State<GoalsDesktopScreen> {
               ),
             ),
             if (!isLast)
-              Container(width: 2, height: 100, color: Colors.grey[300]),
+              Container(
+                width: 2,
+                height: 100,
+                color: Colors.grey[300],
+              ),
           ],
         ),
         const SizedBox(width: 20),
-
+        
         // Card da Meta
         Expanded(
           child: Container(
@@ -1085,7 +1085,9 @@ class _GoalsDesktopScreenState extends State<GoalsDesktopScreen> {
     showDialog(
       context: context,
       builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
         child: Container(
           width: 700,
           padding: const EdgeInsets.all(32),
@@ -1112,7 +1114,7 @@ class _GoalsDesktopScreenState extends State<GoalsDesktopScreen> {
                   ],
                 ),
                 const SizedBox(height: 24),
-
+                
                 // Nome da Meta
                 _buildTextField(
                   label: "Nome da Meta",
@@ -1120,7 +1122,7 @@ class _GoalsDesktopScreenState extends State<GoalsDesktopScreen> {
                   icon: Icons.flag_rounded,
                 ),
                 const SizedBox(height: 16),
-
+                
                 // Descrição
                 _buildTextField(
                   label: "Descrição (opcional)",
@@ -1129,7 +1131,7 @@ class _GoalsDesktopScreenState extends State<GoalsDesktopScreen> {
                   maxLines: 3,
                 ),
                 const SizedBox(height: 16),
-
+                
                 // Valor Total e Prazo
                 Row(
                   children: [
@@ -1153,7 +1155,7 @@ class _GoalsDesktopScreenState extends State<GoalsDesktopScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
-
+                
                 // Categoria e Prioridade
                 Row(
                   children: [
@@ -1166,7 +1168,7 @@ class _GoalsDesktopScreenState extends State<GoalsDesktopScreen> {
                           "Educação",
                           "Veículo",
                           "Imóvel",
-                          "Outro",
+                          "Outro"
                         ],
                         icon: Icons.category_rounded,
                       ),
@@ -1182,7 +1184,7 @@ class _GoalsDesktopScreenState extends State<GoalsDesktopScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
-
+                
                 // Periodicidade
                 _buildDropdown(
                   label: "Periodicidade de Aportes",
@@ -1190,7 +1192,7 @@ class _GoalsDesktopScreenState extends State<GoalsDesktopScreen> {
                   icon: Icons.repeat_rounded,
                 ),
                 const SizedBox(height: 24),
-
+                
                 // Opções Avançadas
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -1231,7 +1233,7 @@ class _GoalsDesktopScreenState extends State<GoalsDesktopScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-
+                
                 // Botões de Ação
                 Row(
                   children: [
@@ -1389,7 +1391,10 @@ class _GoalsDesktopScreenState extends State<GoalsDesktopScreen> {
             ),
           ),
           items: items.map((item) {
-            return DropdownMenuItem(value: item, child: Text(item));
+            return DropdownMenuItem(
+              value: item,
+              child: Text(item),
+            );
           }).toList(),
           onChanged: (value) {},
         ),
@@ -1417,7 +1422,682 @@ class _GoalsDesktopScreenState extends State<GoalsDesktopScreen> {
           Expanded(
             child: Text(
               label,
-              style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[700]),
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: Colors.grey[700],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ===== POPUP MODERNO DE METAS PARA PIN =====
+  static void showGoalsForPinPopup(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.6),
+      builder: (context) => _GoalsForPinDialog(),
+    );
+  }
+}
+
+// ===== DIALOG STATEFUL PARA METAS COM PIN =====
+class _GoalsForPinDialog extends StatefulWidget {
+  @override
+  State<_GoalsForPinDialog> createState() => _GoalsForPinDialogState();
+}
+
+class _GoalsForPinDialogState extends State<_GoalsForPinDialog> with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _fadeAnimation;
+  
+  String _searchQuery = "";
+  String _filterCategory = "Todas";
+  
+  // Mock de metas - em produção viria do backend
+  List<Map<String, dynamic>> _allGoals = [
+    {
+      "id": "1",
+      "nome": "Viagem à Europa",
+      "valorTotal": 15000.0,
+      "valorAtual": 4500.0,
+      "categoria": "Viagem",
+      "icon": Icons.flight_rounded,
+      "color": const Color(0xFF2196F3),
+      "pinned": true,
+      "prazo": DateTime(2025, 12, 31),
+    },
+    {
+      "id": "2",
+      "nome": "Reserva de Emergência",
+      "valorTotal": 30000.0,
+      "valorAtual": 18000.0,
+      "categoria": "Investimento",
+      "icon": Icons.shield_rounded,
+      "color": const Color(0xFF4CAF50),
+      "pinned": false,
+      "prazo": DateTime(2026, 6, 30),
+    },
+    {
+      "id": "3",
+      "nome": "Curso de UX Design",
+      "valorTotal": 2000.0,
+      "valorAtual": 2000.0,
+      "categoria": "Educação",
+      "icon": Icons.school_rounded,
+      "color": const Color(0xFF9C27B0),
+      "pinned": true,
+      "prazo": DateTime(2025, 9, 30),
+    },
+    {
+      "id": "4",
+      "nome": "Carro Novo",
+      "valorTotal": 20000.0,
+      "valorAtual": 8000.0,
+      "categoria": "Veículo",
+      "icon": Icons.directions_car_rounded,
+      "color": const Color(0xFFFFA000),
+      "pinned": false,
+      "prazo": DateTime(2025, 11, 30),
+    },
+    {
+      "id": "5",
+      "nome": "Casa na Praia",
+      "valorTotal": 50000.0,
+      "valorAtual": 15000.0,
+      "categoria": "Imóvel",
+      "icon": Icons.home_rounded,
+      "color": const Color(0xFFFF5722),
+      "pinned": false,
+      "prazo": DateTime(2027, 12, 31),
+    },
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+    
+    _scaleAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutBack,
+    );
+    
+    _fadeAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOut,
+    );
+    
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  List<Map<String, dynamic>> get _filteredGoals {
+    return _allGoals.where((goal) {
+      final matchesSearch = goal["nome"]
+          .toString()
+          .toLowerCase()
+          .contains(_searchQuery.toLowerCase());
+      final matchesCategory = _filterCategory == "Todas" ||
+          goal["categoria"] == _filterCategory;
+      return matchesSearch && matchesCategory;
+    }).toList();
+  }
+
+  void _togglePin(String goalId) {
+    setState(() {
+      final goal = _allGoals.firstWhere((g) => g["id"] == goalId);
+      goal["pinned"] = !goal["pinned"];
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pinnedGoals = _filteredGoals.where((g) => g["pinned"] == true).toList();
+    final unpinnedGoals = _filteredGoals.where((g) => g["pinned"] == false).toList();
+
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          backgroundColor: Colors.transparent,
+          child: Container(
+            width: 900,
+            height: 700,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 40,
+                  offset: const Offset(0, 20),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                // Header
+                _buildHeader(),
+                
+                // Search e Filtros
+                _buildSearchAndFilters(),
+                
+                // Conteúdo
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.all(24),
+                    children: [
+                      if (pinnedGoals.isNotEmpty) ...[
+                        _buildSectionHeader("Fixadas na Home", pinnedGoals.length),
+                        const SizedBox(height: 12),
+                        ...pinnedGoals.map((goal) => _buildGoalItem(goal, isPinned: true)),
+                        const SizedBox(height: 24),
+                      ],
+                      
+                      if (unpinnedGoals.isNotEmpty) ...[
+                        _buildSectionHeader("Outras Metas", unpinnedGoals.length),
+                        const SizedBox(height: 12),
+                        ...unpinnedGoals.map((goal) => _buildGoalItem(goal, isPinned: false)),
+                      ],
+                      
+                      if (_filteredGoals.isEmpty)
+                        _buildEmptyState(),
+                    ],
+                  ),
+                ),
+                
+                // Footer
+                _buildFooter(),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF2196F3),
+            const Color(0xFF1976D2),
+          ],
+        ),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(28),
+          topRight: Radius.circular(28),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.push_pin_rounded,
+              color: Colors.white,
+              size: 28,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Gerenciar Metas na Home",
+                  style: GoogleFonts.inter(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "Escolha quais metas exibir no painel principal",
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: Colors.white.withOpacity(0.9),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.close, color: Colors.white, size: 20),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchAndFilters() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        border: Border(
+          bottom: BorderSide(color: Colors.grey[200]!),
+        ),
+      ),
+      child: Row(
+        children: [
+          // Campo de Busca
+          Expanded(
+            flex: 2,
+            child: TextField(
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
+              decoration: InputDecoration(
+                hintText: "Buscar metas...",
+                prefixIcon: const Icon(Icons.search, size: 20),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, size: 20),
+                        onPressed: () {
+                          setState(() {
+                            _searchQuery = "";
+                          });
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey[300]!),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFF2196F3), width: 2),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+              ),
+            ),
+          ),
+          
+          const SizedBox(width: 16),
+          
+          // Filtro de Categoria
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: DropdownButton<String>(
+              value: _filterCategory,
+              underline: const SizedBox(),
+              icon: const Icon(Icons.keyboard_arrow_down),
+              items: [
+                "Todas",
+                "Viagem",
+                "Investimento",
+                "Educação",
+                "Veículo",
+                "Imóvel"
+              ].map((category) {
+                return DropdownMenuItem(
+                  value: category,
+                  child: Text(category),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() {
+                  _filterCategory = value!;
+                });
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, int count) {
+    return Row(
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.inter(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2196F3).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            count.toString(),
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF2196F3),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGoalItem(Map<String, dynamic> goal, {required bool isPinned}) {
+    final percent = (goal["valorAtual"] as double) / (goal["valorTotal"] as double);
+    final diasRestantes = (goal["prazo"] as DateTime).difference(DateTime.now()).inDays;
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isPinned
+              ? (goal["color"] as Color).withOpacity(0.3)
+              : Colors.grey[200]!,
+          width: isPinned ? 2 : 1,
+        ),
+        boxShadow: [
+          if (isPinned)
+            BoxShadow(
+              color: (goal["color"] as Color).withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => _togglePin(goal["id"]),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                // Ícone
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: (goal["color"] as Color).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    goal["icon"] as IconData,
+                    color: goal["color"] as Color,
+                    size: 24,
+                  ),
+                ),
+                
+                const SizedBox(width: 16),
+                
+                // Informações
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              goal["nome"],
+                              style: GoogleFonts.inter(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: (goal["color"] as Color).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              goal["categoria"],
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: goal["color"] as Color,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "R\$ ${(goal["valorAtual"] as double).toStringAsFixed(0)} de R\$ ${(goal["valorTotal"] as double).toStringAsFixed(0)}",
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    color: Colors.grey[700],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                LinearPercentIndicator(
+                                  padding: EdgeInsets.zero,
+                                  lineHeight: 6,
+                                  percent: percent > 1 ? 1 : percent,
+                                  backgroundColor: Colors.grey[200],
+                                  progressColor: goal["color"] as Color,
+                                  barRadius: const Radius.circular(10),
+                                  animation: true,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                "${(percent * 100).toStringAsFixed(0)}%",
+                                style: GoogleFonts.inter(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: goal["color"] as Color,
+                                ),
+                              ),
+                              Text(
+                                "$diasRestantes dias",
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(width: 16),
+                
+                // Botão Pin
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isPinned
+                        ? (goal["color"] as Color).withOpacity(0.1)
+                        : Colors.grey[100],
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isPinned
+                          ? (goal["color"] as Color).withOpacity(0.3)
+                          : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
+                  child: Icon(
+                    isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+                    color: isPinned ? goal["color"] as Color : Colors.grey[600],
+                    size: 20,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.search_off_rounded,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              "Nenhuma meta encontrada",
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Tente ajustar os filtros de busca",
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFooter() {
+    final pinnedCount = _allGoals.where((g) => g["pinned"] == true).length;
+    
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        border: Border(
+          top: BorderSide(color: Colors.grey[200]!),
+        ),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(28),
+          bottomRight: Radius.circular(28),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, size: 18, color: Colors.grey[600]),
+                const SizedBox(width: 8),
+                Text(
+                  "$pinnedCount ${pinnedCount == 1 ? 'meta fixada' : 'metas fixadas'} na home",
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: Colors.grey[700],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text("Metas atualizadas com sucesso!"),
+                  backgroundColor: const Color(0xFF4CAF50),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2196F3),
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
+            child: Text(
+              "Salvar Alterações",
+              style: GoogleFonts.inter(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
             ),
           ),
         ],
