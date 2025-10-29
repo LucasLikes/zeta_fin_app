@@ -23,16 +23,6 @@ class _HomeMobileScreenState extends State<HomeMobileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu, color: Colors.black87),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ),
-      ),
       body: Stack(
         children: [
           // Conteúdo rolável

@@ -16,103 +16,283 @@ class SidebarMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 260,
+      width: 280,
       height: double.infinity,
-      decoration: const BoxDecoration(
-        color: AppColors.primary, // fundo verde do menu
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            AppColors.primary,
+            AppColors.primary.withOpacity(0.95),
+          ],
+        ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.shadow,
-            blurRadius: 12,
-            offset: Offset(2, 0),
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(4, 0),
           ),
         ],
       ),
-      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
       child: Column(
         children: [
-          // Logo / Header
-          Row(
+          // =============== LOGO / HEADER ===============
+          _buildHeader(),
+          
+          const SizedBox(height: 48),
+
+          // =============== NAVEGAÇÃO ===============
+          _buildNavItem(
+            context: context,
+            icon: Icons.home_rounded,
+            label: "Home",
+            index: 0,
+          ),
+          const SizedBox(height: 8),
+          
+          _buildNavItem(
+            context: context,
+            icon: Icons.receipt_long_rounded,
+            label: "Minhas Despesas",
+            index: 1,
+          ),
+          const SizedBox(height: 8),
+          
+          _buildNavItem(
+            context: context,
+            icon: Icons.swap_vert_rounded,
+            label: "Histórico",
+            index: 2,
+          ),
+          const SizedBox(height: 8),
+          
+          _buildNavItem(
+            context: context,
+            icon: Icons.flag_rounded,
+            label: "Metas",
+            index: 3,
+          ),
+
+          const Spacer(),
+
+          // =============== FOOTER ===============
+          _buildFooter(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.white.withOpacity(0.3),
+                  blurRadius: 8,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.savings_rounded,
+              color: AppColors.primary,
+              size: 28,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(
-                Icons.savings_outlined,
-                color: Colors.white,
-                size: 30,
-              ),
-              const SizedBox(width: 8),
               Text(
                 "Zeta Fin",
                 style: GoogleFonts.inter(
                   fontSize: 20,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w800,
                   color: Colors.white,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              Text(
+                "Finanças Pessoais",
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white.withOpacity(0.8),
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 40),
-
-          // Navegação
-          _buildNavItem(Icons.home, "Home", 0),
-          _buildNavItem(Icons.settings, "Configurações", 1),
-          _buildNavItem(Icons.swap_vert_rounded, "Histórico", 2),
-          _buildNavItem(Icons.flag_rounded, "Metas", 3),
-
-          const Spacer(),
-
-          // Footer (logout, versão, etc)
-          Divider(color: Colors.white54),
-          const SizedBox(height: 12),
-
-          TextButton.icon(
-            onPressed: () {
-              // Navega para a tela de login
-              context.go(
-                '/login',
-              ); // Substitua '/login' pela rota correta do seu app
-            },
-            icon: const Icon(Icons.logout, color: Colors.white, size: 20),
-            label: Text(
-              "Sair",
-              style: GoogleFonts.inter(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-                color: Colors.white,
-              ),
-            ),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, int index) {
-    bool selected = selectedIndex == index;
+  Widget _buildNavItem({
+  required IconData icon,
+  required BuildContext context,
+  required String label,
+  required int index,
+}) {
+  bool isSelected = selectedIndex == index;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      decoration: BoxDecoration(
-        color: selected ? Colors.white.withOpacity(0.3) : Colors.transparent,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: ListTile(
-        leading: Icon(icon, color: selected ? Colors.white : Colors.white70),
-        title: Text(
-          label,
-          style: GoogleFonts.inter(
-            color: selected ? Colors.white : Colors.white70,
-            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+  return AnimatedContainer(
+    duration: const Duration(milliseconds: 300),
+    curve: Curves.easeInOut,
+    child: Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          onItemSelected(index);
+
+          // 🧭 NAVEGAÇÃO DO MENU
+          final router = GoRouter.of(context);
+          switch (index) {
+            case 0:
+              router.go('/home');
+              break;
+            case 1:
+              router.go('/expenses');
+              break;
+            case 2:
+              router.go('/history');
+              break;
+            case 3:
+              router.go('/goals');
+              break;
+          }
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? Colors.white.withOpacity(0.15)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                width: 4,
+                height: isSelected ? 40 : 0,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(4),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: Colors.white.withOpacity(0.8),
+                            blurRadius: 12,
+                            spreadRadius: 2,
+                          ),
+                          BoxShadow(
+                            color: Colors.white.withOpacity(0.6),
+                            blurRadius: 20,
+                            spreadRadius: 4,
+                          ),
+                        ]
+                      : [],
+                ),
+              ),
+              SizedBox(width: isSelected ? 16 : 4),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? Colors.white.withOpacity(0.2)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  icon,
+                  color: isSelected ? Colors.white : Colors.white70,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    color: isSelected ? Colors.white : Colors.white70,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    fontSize: 15,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ),
+              if (isSelected)
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.white.withOpacity(0.5),
+                        blurRadius: 6,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                ),
+            ],
           ),
         ),
-        onTap: () => onItemSelected(index),
       ),
+    ),
+  );
+}
+
+
+  Widget _buildFooter(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          height: 1,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.transparent,
+                Colors.white.withOpacity(0.3),
+                Colors.transparent,
+              ],
+            ),
+          ),
+        ),
+        
+        const SizedBox(height: 20),
+        
+        // Versão
+        Text(
+          "v1.0.0",
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            color: Colors.white.withOpacity(0.5),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 }
