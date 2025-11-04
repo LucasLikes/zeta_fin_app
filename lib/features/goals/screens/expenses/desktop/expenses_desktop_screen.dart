@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:percent_indicator/percent_indicator.dart';
+import 'package:provider/provider.dart';
+import 'package:zeta_fin_app/features/expenses/controllers/transaction_controller.dart';
+import 'package:zeta_fin_app/features/expenses/widgets/add_transaction_popup.dart';
 import 'package:zeta_fin_app/features/goals/widgets/menu_desktop.dart';
 import 'package:zeta_fin_app/features/goals/widgets/user_menu_desktop.dart';
 
+// ===== CLASSE PRINCIPAL =====
 class ExpensesDesktopScreen extends StatefulWidget {
   const ExpensesDesktopScreen({super.key});
 
@@ -11,7 +15,40 @@ class ExpensesDesktopScreen extends StatefulWidget {
   State<ExpensesDesktopScreen> createState() => _ExpensesDesktopScreenState();
 }
 
+// ===== STATE =====
 class _ExpensesDesktopScreenState extends State<ExpensesDesktopScreen> {
+  late TransactionController _transactionController;
+
+  @override
+  void initState() {
+    super.initState();
+    _transactionController = Provider.of<TransactionController>(
+      context,
+      listen: false,
+    );
+    // Chama _loadData após o build inicial
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
+  }
+
+  // Carrega os dados da API
+  Future<void> _loadData() async {
+    try {
+      await _transactionController.loadAll();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao carregar dados: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -29,72 +66,111 @@ class _ExpensesDesktopScreenState extends State<ExpensesDesktopScreen> {
 
             // ===== CONTEÚDO PRINCIPAL =====
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(32),
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(),
-                    const SizedBox(height: 40),
+              child: Consumer<TransactionController>(
+                builder: (context, controller, child) {
+                  if (controller.isLoading) {
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
 
-                    // 💰 VISÃO GERAL FINANCEIRA
-                    _buildFinancialOverview(),
-                    const SizedBox(height: 32),
+                  if (controller.errorMessage != null) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 64,
+                            color: Colors.red[300],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            controller.errorMessage!,
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              color: Colors.red[700],
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: _loadData,
+                            icon: const Icon(Icons.refresh_rounded),
+                            label: const Text('Tentar Novamente'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
 
-                    // 📊 DASHBOARD DE CONTROLE
-                    Row(
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.all(32),
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          flex: 2,
-                          child: Column(
-                            children: [
-                              _buildExpensesBreakdown(),
-                              const SizedBox(height: 24),
-                              _buildSpendingLimit(),
-                              const SizedBox(height: 24),
-                              _buildMonthlyComparison(),
-                            ],
-                          ),
+                        _buildHeader(),
+                        const SizedBox(height: 40),
+
+                        // 💰 VISÃO GERAL FINANCEIRA
+                        _buildFinancialOverview(controller),
+                        const SizedBox(height: 32),
+
+                        // 📊 DASHBOARD DE CONTROLE
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 2,
+                              child: Column(
+                                children: [
+                                  _buildExpensesBreakdown(controller),
+                                  const SizedBox(height: 24),
+                                  _buildSpendingLimit(controller),
+                                  const SizedBox(height: 24),
+                                  _buildMonthlyComparison(),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 24),
+                            Expanded(
+                              child: Column(
+                                children: [
+                                  _buildSavingsGoal(controller),
+                                  const SizedBox(height: 24),
+                                  _buildFinancialHealth(),
+                                  const SizedBox(height: 24),
+                                  _buildQuickInsights(),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 24),
-                        Expanded(
-                          child: Column(
-                            children: [
-                              _buildSavingsGoal(),
-                              const SizedBox(height: 24),
-                              _buildFinancialHealth(),
-                              const SizedBox(height: 24),
-                              _buildQuickInsights(),
-                            ],
-                          ),
-                        ),
+
+                        const SizedBox(height: 32),
+
+                        // 🎯 CATEGORIAS DETALHADAS
+                        _buildSectionTitle("Análise Detalhada por Categoria"),
+                        const SizedBox(height: 16),
+                        _buildCategoryTabs(controller),
+
+                        const SizedBox(height: 32),
+
+                        // 💡 INTELIGÊNCIA FINANCEIRA
+                        _buildSectionTitle("Seu Consultor Financeiro"),
+                        const SizedBox(height: 16),
+                        _buildFinancialAdvisor(),
+
+                        const SizedBox(height: 32),
+
+                        // 🏆 CONQUISTAS E PROGRESSO
+                        _buildSectionTitle("Seu Progresso Financeiro"),
+                        const SizedBox(height: 16),
+                        _buildAchievementsSection(),
                       ],
                     ),
-
-                    const SizedBox(height: 32),
-
-                    // 🎯 CATEGORIAS DETALHADAS
-                    _buildSectionTitle("Análise Detalhada por Categoria"),
-                    const SizedBox(height: 16),
-                    _buildCategoryTabs(),
-
-                    const SizedBox(height: 32),
-
-                    // 💡 INTELIGÊNCIA FINANCEIRA
-                    _buildSectionTitle("Seu Consultor Financeiro"),
-                    const SizedBox(height: 16),
-                    _buildFinancialAdvisor(),
-
-                    const SizedBox(height: 32),
-
-                    // 🏆 CONQUISTAS E PROGRESSO
-                    _buildSectionTitle("Seu Progresso Financeiro"),
-                    const SizedBox(height: 16),
-                    _buildAchievementsSection(),
-                  ],
-                ),
+                  );
+                },
               ),
             ),
           ],
@@ -129,14 +205,59 @@ class _ExpensesDesktopScreenState extends State<ExpensesDesktopScreen> {
             ),
           ],
         ),
-        UserMenuDesktop(
-          userName: "Lucas Likes",
-          userEmail: "likes@email.com",
-          userImageUrl:
-              "https://media.licdn.com/dms/image/v2/D4D03AQFbnY31wEJ2Xw/profile-displayphoto-shrink_800_800/B4DZdCZqokGYAc-/0/1749165715177?e=1762992000&v=beta&t=E_lTaMGdMDm_XHqiFZQEPzqZPZSIDLo1AzSHO-AJ3gg",
-          onLogout: () {
-            debugPrint("Logout realizado!");
-          },
+        Row(
+          children: [
+            // 🆕 BOTÃO PARA ADICIONAR TRANSAÇÃO
+            ElevatedButton.icon(
+              onPressed: () async {
+                final result = await AddTransactionPopup.show(context);
+                if (result == true && mounted) {
+                  // Recarregar dados após adicionar transação
+                  await _loadData();
+                  
+                  // Mostrar mensagem de sucesso
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Transação adicionada com sucesso!'),
+                      backgroundColor: Colors.green,
+                      behavior: SnackBarBehavior.floating,
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+              },
+              icon: const Icon(Icons.add_rounded, size: 20),
+              label: Text(
+                "Nova Transação",
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1A237E),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            UserMenuDesktop(
+              userName: "Lucas Likes",
+              userEmail: "likes@email.com",
+              userImageUrl:
+                  "https://media.licdn.com/dms/image/v2/D4D03AQFbnY31wEJ2Xw/profile-displayphoto-shrink_800_800/B4DZdCZqokGYAc-/0/1749165715177?e=1762992000&v=beta&t=E_lTaMGdMDm_XHqiFZQEPzqZPZSIDLo1AzSHO-AJ3gg",
+              onLogout: () {
+                debugPrint("Logout realizado!");
+              },
+            ),
+          ],
         ),
       ],
     );
@@ -154,12 +275,15 @@ class _ExpensesDesktopScreenState extends State<ExpensesDesktopScreen> {
   }
 
   // 💰 VISÃO GERAL FINANCEIRA
-  Widget _buildFinancialOverview() {
-    double renda = 8000.00;
-    double totalGastos = 4320.00;
-    double saldoRestante = renda - totalGastos;
-    double percentualGasto = totalGastos / renda;
-
+  Widget _buildFinancialOverview(TransactionController controller) {
+    final summary = controller.summary;
+    
+    // Se não tiver dados do resumo, usa valores default
+    final renda = summary?['income']?['total'] ?? 8000.00;
+    final totalGastos = summary?['expense']?['total'] ?? 4320.00;
+    final saldoRestante = renda - totalGastos;
+    final percentualGasto = renda > 0 ? totalGastos / renda : 0.0;
+    
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
@@ -316,8 +440,16 @@ class _ExpensesDesktopScreenState extends State<ExpensesDesktopScreen> {
     );
   }
 
-  // 📊 BREAKDOWN DE DESPESAS
-  Widget _buildExpensesBreakdown() {
+  // 📊 BREAKDOWN DE DESPESAS - CORRIGIDO
+  Widget _buildExpensesBreakdown(TransactionController controller) {
+    final summary = controller.summary;
+    
+    // Pega os valores do summary ou usa defaults
+    final contasFixas = summary?['expense']?['byType']?['fixas'] ?? 2050.00;
+    final contasVariaveis = summary?['expense']?['byType']?['variaveis'] ?? 1870.00;
+    final desnecessarios = summary?['expense']?['byType']?['desnecessarios'] ?? 400.00;
+    final renda = summary?['income']?['total'] ?? 8000.00;
+    
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -343,14 +475,14 @@ class _ExpensesDesktopScreenState extends State<ExpensesDesktopScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          _buildExpenseBar("Contas Fixas", 2050.00, 8000.00,
-              const Color(0xFF2196F3), "47.5% ideal: ≤50%"),
+          _buildExpenseBar("Contas Fixas", contasFixas, renda,
+              const Color(0xFF2196F3), "${((contasFixas/renda)*100).toStringAsFixed(1)}% ideal: ≤50%"),
           const SizedBox(height: 16),
-          _buildExpenseBar("Contas Variáveis", 1870.00, 8000.00,
-              const Color(0xFFFFA000), "23.4% ideal: ≤30%"),
+          _buildExpenseBar("Contas Variáveis", contasVariaveis, renda,
+              const Color(0xFFFFA000), "${((contasVariaveis/renda)*100).toStringAsFixed(1)}% ideal: ≤30%"),
           const SizedBox(height: 16),
-          _buildExpenseBar("Gastos Desnecessários", 400.00, 8000.00,
-              const Color(0xFFE91E63), "5% ideal: ≤20%"),
+          _buildExpenseBar("Gastos Desnecessários", desnecessarios, renda,
+              const Color(0xFFE91E63), "${((desnecessarios/renda)*100).toStringAsFixed(1)}% ideal: ≤20%"),
         ],
       ),
     );
@@ -358,7 +490,7 @@ class _ExpensesDesktopScreenState extends State<ExpensesDesktopScreen> {
 
   Widget _buildExpenseBar(String label, double value, double total,
       Color color, String percentage) {
-    double percent = value / total;
+    double percent = total > 0 ? (value / total).clamp(0.0, 1.0) : 0.0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -418,14 +550,20 @@ class _ExpensesDesktopScreenState extends State<ExpensesDesktopScreen> {
     );
   }
 
-  // 🎯 LIMITE DE GASTOS
-  Widget _buildSpendingLimit() {
-    double renda = 8000.00;
-    double contasFixas = 2050.00;
-    double metaPoupanca = 1600.00; // 20% da renda
-    double limiteGastos = renda - contasFixas - metaPoupanca;
-    double gastoAtual = 2270.00; // Variáveis + Desnecessários
-    double percentUsado = gastoAtual / limiteGastos;
+  // 🎯 LIMITE DE GASTOS - CORRIGIDO
+  Widget _buildSpendingLimit(TransactionController controller) {
+    final summary = controller.summary;
+    
+    final renda = summary?['income']?['total'] ?? 8000.00;
+    final contasFixas = summary?['expense']?['byType']?['fixas'] ?? 2050.00;
+    final metaPoupanca = renda * 0.2; // 20% da renda
+    final limiteGastos = renda - contasFixas - metaPoupanca;
+    
+    final contasVariaveis = summary?['expense']?['byType']?['variaveis'] ?? 1870.00;
+    final desnecessarios = summary?['expense']?['byType']?['desnecessarios'] ?? 400.00;
+    final gastoAtual = contasVariaveis + desnecessarios;
+    
+    final percentUsado = limiteGastos > 0 ? gastoAtual / limiteGastos : 0.0;
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -548,6 +686,9 @@ class _ExpensesDesktopScreenState extends State<ExpensesDesktopScreen> {
     );
   }
 
+  // Continua com os outros métodos (_buildMonthlyComparison, _buildSavingsGoal, etc.)
+  // mantendo o código original...
+
   // 📈 COMPARAÇÃO MENSAL
   Widget _buildMonthlyComparison() {
     final data = [
@@ -647,11 +788,15 @@ class _ExpensesDesktopScreenState extends State<ExpensesDesktopScreen> {
     );
   }
 
-  // 🎯 META DE POUPANÇA
-  Widget _buildSavingsGoal() {
-    double metaMensal = 1600.00;
-    double economizado = 1450.00;
-    double progresso = economizado / metaMensal;
+  // 🎯 META DE POUPANÇA - CORRIGIDO
+  Widget _buildSavingsGoal(TransactionController controller) {
+    final summary = controller.summary;
+    
+    final renda = summary?['income']?['total'] ?? 8000.00;
+    final totalGastos = summary?['expense']?['total'] ?? 4320.00;
+    final economizado = renda - totalGastos;
+    final metaMensal = renda * 0.2; // 20% da renda
+    final progresso = metaMensal > 0 ? (economizado / metaMensal).clamp(0.0, 1.0) : 0.0;
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -684,7 +829,7 @@ class _ExpensesDesktopScreenState extends State<ExpensesDesktopScreen> {
                   color: Colors.white,
                 ),
               ),
-              Icon(
+              const Icon(
                 Icons.savings_rounded,
                 color: Colors.white,
                 size: 28,
@@ -882,7 +1027,7 @@ class _ExpensesDesktopScreenState extends State<ExpensesDesktopScreen> {
   }
 
   // 📑 TABS DE CATEGORIAS
-  Widget _buildCategoryTabs() {
+  Widget _buildCategoryTabs(TransactionController controller) {
     return DefaultTabController(
       length: 3,
       child: Container(
@@ -918,9 +1063,9 @@ class _ExpensesDesktopScreenState extends State<ExpensesDesktopScreen> {
               height: 400,
               child: TabBarView(
                 children: [
-                  _buildExpensesList("fixas"),
-                  _buildExpensesList("variaveis"),
-                  _buildExpensesList("desnecessarios"),
+                  _buildExpensesList(controller, "fixas"),
+                  _buildExpensesList(controller, "variaveis"),
+                  _buildExpensesList(controller, "desnecessarios"),
                 ],
               ),
             ),
@@ -930,31 +1075,43 @@ class _ExpensesDesktopScreenState extends State<ExpensesDesktopScreen> {
     );
   }
 
-  Widget _buildExpensesList(String type) {
-    List<Map<String, dynamic>> expenses = [];
+  Widget _buildExpensesList(TransactionController controller, String type) {
+    // Filtra transações do controller por tipo
+    List expenses = [];
     
     if (type == "fixas") {
-      expenses = [
-        {"nome": "Aluguel", "valor": 1200.00, "vencimento": "10/11/2025"},
-        {"nome": "Internet", "valor": 150.00, "vencimento": "05/11/2025"},
-        {"nome": "Academia", "valor": 100.00, "vencimento": "08/11/2025"},
-        {"nome": "Netflix", "valor": 39.90, "vencimento": "20/11/2025"},
-        {"nome": "Plano de Saúde", "valor": 560.00, "vencimento": "12/11/2025"},
-      ];
+      expenses = controller.fixedExpenses;
     } else if (type == "variaveis") {
-      expenses = [
-        {"nome": "Supermercado", "valor": 750.00, "categoria": "Alimentação"},
-        {"nome": "Uber", "valor": 210.00, "categoria": "Transporte"},
-        {"nome": "Restaurantes", "valor": 320.00, "categoria": "Lazer"},
-        {"nome": "Cinema", "valor": 95.00, "categoria": "Lazer"},
-        {"nome": "Farmácia", "valor": 135.00, "categoria": "Saúde"},
-      ];
+      expenses = controller.variableExpenses;
     } else {
-      expenses = [
-        {"nome": "Assinatura Spotify (não usada)", "valor": 34.90},
-        {"nome": "Compras impulsivas (Shopee)", "valor": 89.00},
-        {"nome": "Delivery excessivo", "valor": 275.00},
-      ];
+      expenses = controller.unnecessaryExpenses;
+    }
+
+    // Se não houver dados do controller, usa mock data
+    if (expenses.isEmpty) {
+      if (type == "fixas") {
+        expenses = [
+          {"nome": "Aluguel", "valor": 1200.00, "vencimento": "10/11/2025"},
+          {"nome": "Internet", "valor": 150.00, "vencimento": "05/11/2025"},
+          {"nome": "Academia", "valor": 100.00, "vencimento": "08/11/2025"},
+          {"nome": "Netflix", "valor": 39.90, "vencimento": "20/11/2025"},
+          {"nome": "Plano de Saúde", "valor": 560.00, "vencimento": "12/11/2025"},
+        ];
+      } else if (type == "variaveis") {
+        expenses = [
+          {"nome": "Supermercado", "valor": 750.00, "categoria": "Alimentação"},
+          {"nome": "Uber", "valor": 210.00, "categoria": "Transporte"},
+          {"nome": "Restaurantes", "valor": 320.00, "categoria": "Lazer"},
+          {"nome": "Cinema", "valor": 95.00, "categoria": "Lazer"},
+          {"nome": "Farmácia", "valor": 135.00, "categoria": "Saúde"},
+        ];
+      } else {
+        expenses = [
+          {"nome": "Assinatura Spotify (não usada)", "valor": 34.90},
+          {"nome": "Compras impulsivas (Shopee)", "valor": 89.00},
+          {"nome": "Delivery excessivo", "valor": 275.00},
+        ];
+      }
     }
 
     return ListView.builder(
@@ -962,6 +1119,11 @@ class _ExpensesDesktopScreenState extends State<ExpensesDesktopScreen> {
       itemCount: expenses.length,
       itemBuilder: (context, index) {
         final expense = expenses[index];
+        
+        // Adapta para trabalhar tanto com Transaction objects quanto com Maps
+        final nome = expense is Map ? expense["nome"] : expense.description;
+        final valor = expense is Map ? expense["valor"] : expense.value;
+        
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
@@ -1002,14 +1164,14 @@ class _ExpensesDesktopScreenState extends State<ExpensesDesktopScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      expense["nome"],
+                      nome.toString(),
                       style: GoogleFonts.inter(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: Colors.black87,
                       ),
                     ),
-                    if (expense.containsKey("vencimento"))
+                    if (expense is Map && expense.containsKey("vencimento"))
                       Text(
                         "Venc: ${expense["vencimento"]}",
                         style: GoogleFonts.inter(
@@ -1017,7 +1179,7 @@ class _ExpensesDesktopScreenState extends State<ExpensesDesktopScreen> {
                           color: Colors.grey[600],
                         ),
                       ),
-                    if (expense.containsKey("categoria"))
+                    if (expense is Map && expense.containsKey("categoria"))
                       Text(
                         expense["categoria"],
                         style: GoogleFonts.inter(
@@ -1029,7 +1191,7 @@ class _ExpensesDesktopScreenState extends State<ExpensesDesktopScreen> {
                 ),
               ),
               Text(
-                "R\$ ${expense["valor"].toStringAsFixed(2)}",
+                "R\$ ${valor.toStringAsFixed(2)}",
                 style: GoogleFonts.inter(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,

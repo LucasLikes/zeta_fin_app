@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:zeta_fin_app/core/state/auth_state.dart';
 
 class UserMenuDesktop extends StatefulWidget {
   final String userName;
   final String userEmail;
   final String userImageUrl;
-  final VoidCallback? onLogout;
+  final VoidCallback? onLogout; // <-- parâmetro adicionado
 
   const UserMenuDesktop({
     Key? key,
@@ -22,6 +25,19 @@ class UserMenuDesktop extends StatefulWidget {
 class _UserMenuDesktopState extends State<UserMenuDesktop> {
   bool isDarkMode = false;
   bool isMenuOpen = false;
+
+  void _handleLogout() {
+  if (widget.onLogout != null) {
+    widget.onLogout!();
+  } else {
+    // 1️⃣ Limpa o estado de login
+    final authState = context.read<AuthState>();
+    authState.logout(); // <-- você precisa implementar logout no AuthState
+ 
+    // 2️⃣ Redireciona para a tela de login
+    context.go('/login');
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +58,7 @@ class _UserMenuDesktopState extends State<UserMenuDesktop> {
         setState(() => isMenuOpen = false);
         switch (value) {
           case 1:
-            debugPrint("My Account");
+            context.go('/my-account');
             break;
           case 2:
             debugPrint("Settings");
@@ -51,12 +67,11 @@ class _UserMenuDesktopState extends State<UserMenuDesktop> {
             debugPrint("Billing Details");
             break;
           case 6:
-            widget.onLogout?.call();
+            _handleLogout(); // logout
             break;
         }
       },
       itemBuilder: (context) => [
-        // ==== HEADER ====
         PopupMenuItem<int>(
           value: 0,
           enabled: false,
@@ -102,7 +117,8 @@ class _UserMenuDesktopState extends State<UserMenuDesktop> {
                       height: 48,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFF7FE5A8), width: 2), // Borda verde
+                        border: Border.all(
+                            color: const Color(0xFF7FE5A8), width: 2),
                         image: DecorationImage(
                           image: NetworkImage(widget.userImageUrl),
                           fit: BoxFit.cover,
@@ -141,33 +157,23 @@ class _UserMenuDesktopState extends State<UserMenuDesktop> {
             ),
           ),
         ),
-
         const PopupMenuDivider(height: 1),
-
-        // ==== MY ACCOUNT ====
         PopupMenuItem<int>(
           value: 1,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: _buildMenuItemContent(Icons.person_outline_rounded, "My Account"),
         ),
-
-        // ==== SETTINGS ====
         PopupMenuItem<int>(
           value: 2,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: _buildMenuItemContent(Icons.settings_outlined, "Settings"),
         ),
-
-        // ==== BILLING DETAILS ====
         PopupMenuItem<int>(
           value: 3,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: _buildMenuItemContent(Icons.attach_money_rounded, "Billing Details"),
         ),
-
         const PopupMenuDivider(height: 1),
-
-        // ==== THEME MODE ====
         PopupMenuItem<int>(
           value: -1,
           enabled: false,
@@ -194,10 +200,7 @@ class _UserMenuDesktopState extends State<UserMenuDesktop> {
             ],
           ),
         ),
-
         const PopupMenuDivider(height: 1),
-
-        // ==== LOGOUT ====
         PopupMenuItem<int>(
           value: 6,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -221,7 +224,7 @@ class _UserMenuDesktopState extends State<UserMenuDesktop> {
               height: 36,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF7FE5A8), width: 2), // Borda verde
+                border: Border.all(color: const Color(0xFF7FE5A8), width: 2),
                 image: DecorationImage(
                   image: NetworkImage(widget.userImageUrl),
                   fit: BoxFit.cover,

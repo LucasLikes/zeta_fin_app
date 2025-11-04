@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:zeta_fin_app/core/state/auth_state.dart';
 import 'package:zeta_fin_app/core/theme/app_colors.dart';
 import 'package:zeta_fin_app/core/theme/app_text_styles.dart';
 import 'package:zeta_fin_app/core/services/dio_client.dart';
@@ -40,59 +42,37 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _login() async {
-    // Limpar mensagem de erro anterior
+  setState(() => _errorMessage = null);
+
+  if (!_formKey.currentState!.validate()) return;
+
+  String email = _emailController.text.trim();
+  String password = _passwordController.text;
+
+  setState(() => _isLoading = true);
+
+  try {
+    final authState = Provider.of<AuthState>(context, listen: false);
+
+    await _authController.login(email, password, authState);
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Login realizado com sucesso!'),
+        backgroundColor: AppColors.success,
+      ),
+    );
+
+    context.go('/home'); // ou deixe o authState redirecionar
+  } catch (e) {
     setState(() {
-      _errorMessage = null;
+      _errorMessage = 'Erro ao realizar login. Tente novamente.';
+      _isLoading = false;
     });
-
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    String email = _emailController.text.trim();
-    String password = _passwordController.text;
-
-    setState(() => _isLoading = true);
-
-    try {
-      await _authController.login(email, password);
-      
-      if (!mounted) return;
-
-      // Mensagem de sucesso
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Login realizado com sucesso!'),
-          backgroundColor: AppColors.success,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
-
-      // Navegar para home
-      context.go('/home');
-      
-    } catch (e) {
-      // Tratamento de erros
-      String errorMessage = 'Erro ao realizar login. Tente novamente.';
-
-      if (e.toString().contains('401')) {
-        errorMessage = 'E-mail ou senha incorretos!';
-      } else if (e.toString().contains('NetworkException') || 
-                 e.toString().contains('SocketException')) {
-        errorMessage = 'Erro de conexão. Verifique sua internet.';
-      } else if (e.toString().contains('timeout')) {
-        errorMessage = 'Tempo de conexão esgotado. Tente novamente.';
-      }
-
-      setState(() {
-        _errorMessage = errorMessage;
-        _isLoading = false;
-      });
-    }
   }
+}
 
   void _handleGoogleSignIn() async {
     // TODO: Implementar Google Sign In

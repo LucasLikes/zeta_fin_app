@@ -1,4 +1,6 @@
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:zeta_fin_app/core/state/auth_state.dart';
 import 'package:zeta_fin_app/features/goals/screens/expenses/desktop/expenses_desktop_screen.dart';
 import 'package:zeta_fin_app/features/goals/screens/goal/desktop/goals_desktop.dart';
 
@@ -7,63 +9,57 @@ import 'package:zeta_fin_app/features/goals/screens/home/home_responsive.dart';
 import 'package:zeta_fin_app/features/goals/screens/login/login_responsive_screen.dart';
 import 'package:zeta_fin_app/features/goals/screens/login/cadastro_responsive_screen.dart';
 import 'package:zeta_fin_app/features/goals/screens/login/forgot_response.dart';
+import 'package:zeta_fin_app/features/goals/screens/myAccount/desktop/my_account_desktop_screen.dart';
 
 class AppRouter {
-  final bool isLoggedIn;
+  final AuthState authState;
 
-  AppRouter({required this.isLoggedIn});
+  AppRouter({required this.authState});
 
   late final GoRouter router = GoRouter(
-    initialLocation: isLoggedIn ? '/home' : '/login',
+    initialLocation: '/login',
 
     routes: [
-      // ===== LOGIN =====
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginResponsiveScreen(),
       ),
-
-      // ===== HOME =====
       GoRoute(
         path: '/home',
         builder: (context, state) => const HomeResponsiveScreen(),
       ),
-
-      // ===== MINHAS DESPESAS =====
       GoRoute(
         path: '/expenses',
         builder: (context, state) => const ExpensesDesktopScreen(),
       ),
-
-      // ===== CADASTRO =====
       GoRoute(
         path: '/cadastro',
         builder: (context, state) => const CadastroResponsiveScreen(),
       ),
-
-      // ===== ESQUECEU SENHA =====
       GoRoute(
         path: '/forgot-password',
         builder: (context, state) => const ForgotPasswordResponsiveScreen(),
       ),
-
-      // ===== METAS =====
       GoRoute(
         path: '/goals',
         builder: (context, state) => const GoalsDesktopScreen(),
       ),
+      GoRoute(
+      path: '/my-account',
+      builder: (context, state) => const MyAccountDesktopScreen(),
+    ),
     ],
 
-    // Redirecionamento simples
     redirect: (context, state) {
-      final logged = isLoggedIn;
-      final loggingIn =
-          state.matchedLocation == '/login' ||
+      final logged = authState.isLoggedIn;
+      final loggingIn = state.matchedLocation == '/login' ||
           state.matchedLocation == '/cadastro';
 
       if (!logged && !loggingIn) return '/login';
       if (logged && loggingIn) return '/home';
       return null;
     },
+    refreshListenable: authState,
   );
 }
+

@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:zeta_fin_app/core/state/auth_state.dart';
 import '../../repositories/user_auth_repository.dart';
 import 'dart:convert';
 
@@ -8,23 +9,24 @@ class AuthController {
   AuthController({required this.authRepository});
 
   // Método de login
-  Future<void> login(String email, String password) async {
-    try {
-      final user = await authRepository.login(email, password);
+  Future<void> login(String email, String password, AuthState authState) async {
+  try {
+    final user = await authRepository.login(email, password);
 
-      // Salvar o token no SharedPreferences após login bem-sucedido
-      final prefs = await SharedPreferences.getInstance();
-      prefs.setString('token', user.token); // Armazenar o token JWT
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setString('token', user.token);
+    prefs.setString('name', user.name);
+    prefs.setString('email', user.email);
 
-      // Aqui você pode seguir com outras ações, como navegar para outra tela ou atualizar o estado.
-
-    } catch (e) {
-      // Tratar erro de login
-      print('Erro de login: $e');
-      rethrow; // Re-throw para capturar no UI se necessário
-    }
+    authState.setUser(name: user.name, email: user.email); // atualiza o estado
+    authState.login(); // ⬅️ atualiza o GoRouter
+  } catch (e) {
+    print('Erro de login: $e');
+    rethrow;
   }
-   // Método para verificar se o token está presente e válido
+}
+
+  // Método para verificar se o token está presente e válido
   Future<bool> isLoggedIn() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
@@ -41,7 +43,9 @@ class AuthController {
     // Simples verificação da validade do token (pode ser estendido para checar a expiração)
     try {
       final parts = token.split('.');
-      final payload = utf8.decode(base64Url.decode(base64Url.normalize(parts[1])));
+      final payload = utf8.decode(
+        base64Url.decode(base64Url.normalize(parts[1])),
+      );
       final payloadMap = json.decode(payload);
 
       final exp = payloadMap['exp'];
@@ -60,9 +64,12 @@ class AuthController {
   }
 
   // Método para logout
-  Future<void> logout() async {
+  Future<void> logout(AuthState authState) async {
     final prefs = await SharedPreferences.getInstance();
-    prefs.remove('token');
+    await prefs.remove('token');
+
+    authState
+        .logout(); // ⬅️ GoRouter vai redirecionar para /login automaticamente
   }
 
   Future<void> cadastrar(String name, String email, String password) async {

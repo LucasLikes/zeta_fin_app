@@ -41,13 +41,16 @@ class _CadastroDesktopScreenState extends State<CadastroDesktopScreen> {
     super.dispose();
   }
 
-  void _cadastrar() async {
-    setState(() => _errorMessage = null);
+  Future<void> _cadastrar() async {
+    setState(() {
+      _errorMessage = null;
+    });
+
     if (!_formKey.currentState!.validate()) return;
 
-    String name = _nameController.text.trim();
-    String email = _emailController.text.trim();
-    String password = _passwordController.text;
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
 
     setState(() => _isLoading = true);
 
@@ -56,12 +59,17 @@ class _CadastroDesktopScreenState extends State<CadastroDesktopScreen> {
 
       if (!mounted) return;
 
+      // Agora sim, finaliza o loading após sucesso
+      setState(() => _isLoading = false);
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Cadastro realizado com sucesso!'),
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
 
@@ -74,7 +82,7 @@ class _CadastroDesktopScreenState extends State<CadastroDesktopScreen> {
     }
   }
 
-  void _handleGoogleSignIn() async {
+  void _handleGoogleSignIn() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text('Google Sign In em desenvolvimento'),
@@ -84,7 +92,7 @@ class _CadastroDesktopScreenState extends State<CadastroDesktopScreen> {
     );
   }
 
-  void _handleAppleSignIn() async {
+  void _handleAppleSignIn() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text('Apple Sign In em desenvolvimento'),
@@ -102,7 +110,10 @@ class _CadastroDesktopScreenState extends State<CadastroDesktopScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [AppColors.backgroundGradientStart, AppColors.backgroundGradientEnd],
+            colors: [
+              AppColors.backgroundGradientStart,
+              AppColors.backgroundGradientEnd,
+            ],
           ),
         ),
         child: SafeArea(
@@ -111,7 +122,7 @@ class _CadastroDesktopScreenState extends State<CadastroDesktopScreen> {
               constraints: const BoxConstraints(maxWidth: 1200),
               child: Row(
                 children: [
-                  // Lado esquerdo: logo + nome + descrição
+                  // Lado esquerdo (logo e descrição)
                   Expanded(
                     child: Container(
                       padding: const EdgeInsets.all(48),
@@ -142,19 +153,25 @@ class _CadastroDesktopScreenState extends State<CadastroDesktopScreen> {
                           const SizedBox(height: 24),
                           Text(
                             'ZetaFin',
-                            style: AppTextStyles.h1.copyWith(color: Colors.white, fontSize: 48),
+                            style: AppTextStyles.h1.copyWith(
+                              color: Colors.white,
+                              fontSize: 48,
+                            ),
                           ),
                           const SizedBox(height: 16),
                           Text(
                             'Cadastre-se e comece a controlar suas finanças de forma fácil e rápida.',
-                            style: AppTextStyles.bodyMedium.copyWith(color: Colors.white70, fontSize: 18),
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: Colors.white70,
+                              fontSize: 18,
+                            ),
                           ),
                         ],
                       ),
                     ),
                   ),
 
-                  // Lado direito: Formulário
+                  // Lado direito (formulário)
                   Expanded(
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.all(48),
@@ -193,25 +210,37 @@ class _CadastroDesktopScreenState extends State<CadastroDesktopScreen> {
             const SizedBox(height: 8),
             Text(
               'Cadastre-se para começar a usar o app',
-              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
             ),
             const SizedBox(height: 32),
+
+            // Mensagem de erro
             if (_errorMessage != null) ...[
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: AppColors.error.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                  border: Border.all(
+                    color: AppColors.error.withOpacity(0.3),
+                  ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline, color: AppColors.error, size: 20),
+                    const Icon(
+                      Icons.error_outline,
+                      color: AppColors.error,
+                      size: 20,
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         _errorMessage!,
-                        style: AppTextStyles.bodySmall.copyWith(color: AppColors.error),
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.error,
+                        ),
                       ),
                     ),
                   ],
@@ -219,12 +248,15 @@ class _CadastroDesktopScreenState extends State<CadastroDesktopScreen> {
               ),
               const SizedBox(height: 20),
             ],
+
+            // Campos
             CustomTextField(
               hintText: 'Seu nome',
               labelText: 'Nome',
               controller: _nameController,
               prefixIcon: Icons.person_outline,
-              validator: (value) => value == null || value.isEmpty ? 'Por favor, insira seu nome' : null,
+              validator: (value) =>
+                  value == null || value.isEmpty ? 'Por favor, insira seu nome' : null,
             ),
             const SizedBox(height: 16),
             CustomTextField(
@@ -234,8 +266,13 @@ class _CadastroDesktopScreenState extends State<CadastroDesktopScreen> {
               keyboardType: TextInputType.emailAddress,
               prefixIcon: Icons.email_outlined,
               validator: (value) {
-                if (value == null || value.isEmpty) return 'Por favor, insira seu e-mail';
-                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) return 'Por favor, insira um e-mail válido';
+                if (value == null || value.isEmpty) {
+                  return 'Por favor, insira seu e-mail';
+                }
+                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                    .hasMatch(value)) {
+                  return 'Por favor, insira um e-mail válido';
+                }
                 return null;
               },
             ),
@@ -247,29 +284,54 @@ class _CadastroDesktopScreenState extends State<CadastroDesktopScreen> {
               isPassword: true,
               prefixIcon: Icons.lock_outline,
               validator: (value) {
-                if (value == null || value.isEmpty) return 'Por favor, insira sua senha';
-                if (value.length < 6) return 'A senha deve ter no mínimo 6 caracteres';
+                if (value == null || value.isEmpty) {
+                  return 'Por favor, insira sua senha';
+                }
+                if (value.length < 6) {
+                  return 'A senha deve ter no mínimo 6 caracteres';
+                }
                 return null;
               },
             ),
             const SizedBox(height: 24),
-            CustomButton(text: 'Cadastrar', onPressed: _cadastrar, isLoading: _isLoading),
+
+            // Botão principal
+            CustomButton(
+              text: 'Cadastrar',
+              onPressed: _isLoading ? () {} : () => _cadastrar(),
+              isLoading: _isLoading,
+            ),
             const SizedBox(height: 24),
+
+            // Linha divisória
             Row(
               children: const [
                 Expanded(child: Divider()),
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: Text('Ou continue com', style: TextStyle(fontSize: 12)),
+                  child: Text(
+                    'Ou continue com',
+                    style: TextStyle(fontSize: 12),
+                  ),
                 ),
                 Expanded(child: Divider()),
               ],
             ),
             const SizedBox(height: 24),
-            SocialAuthButton(type: SocialAuthType.google, onPressed: _handleGoogleSignIn),
+
+            // Botões sociais
+            SocialAuthButton(
+              type: SocialAuthType.google,
+              onPressed: _handleGoogleSignIn,
+            ),
             const SizedBox(height: 12),
-            SocialAuthButton(type: SocialAuthType.apple, onPressed: _handleAppleSignIn),
+            SocialAuthButton(
+              type: SocialAuthType.apple,
+              onPressed: _handleAppleSignIn,
+            ),
             const SizedBox(height: 24),
+
+            // Link para login
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

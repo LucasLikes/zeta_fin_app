@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:percent_indicator/percent_indicator.dart';
+import 'package:provider/provider.dart';
+import 'package:zeta_fin_app/core/services/dio_client.dart';
+import 'package:zeta_fin_app/core/state/auth_state.dart';
 import 'package:zeta_fin_app/core/theme/app_colors.dart';
+import 'package:zeta_fin_app/features/goals/controllers/user_auth_controller.dart';
 import 'package:zeta_fin_app/features/goals/screens/goal/desktop/goals_desktop.dart';
 import 'package:zeta_fin_app/features/goals/widgets/menu_desktop.dart';
 import 'package:zeta_fin_app/features/goals/widgets/user_menu_desktop.dart';
+import 'package:zeta_fin_app/features/repositories/user_auth_repository.dart';
 // Importe a tela de metas para usar o popup
 
 class HomeDesktopScreen extends StatefulWidget {
@@ -68,44 +74,62 @@ class _HomeDesktopScreenState extends State<HomeDesktopScreen> {
   }
 
   // ====================== HEADER ==============================
-  Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Bom dia,",
-              style: GoogleFonts.inter(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey[600],
-              ),
+Widget _buildHeader() {
+  final authState = Provider.of<AuthState>(context);
+
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            saudacaoDoDia(), // aqui usamos a função
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[600],
             ),
-            const SizedBox(height: 4),
-            Text(
-              "Lucas Likes",
-              style: GoogleFonts.inter(
-                fontSize: 32,
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
-              ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            authState.name.isNotEmpty ? authState.name : "Usuário",
+            style: GoogleFonts.inter(
+              fontSize: 32,
+              fontWeight: FontWeight.w700,
+              color: Colors.black87,
             ),
-          ],
-        ),
-        UserMenuDesktop(
-          userName: "Lucas Likes",
-          userEmail: "likes@email.com",
-          userImageUrl:
-              "https://media.licdn.com/dms/image/v2/D4D03AQFbnY31wEJ2Xw/profile-displayphoto-shrink_800_800/B4DZdCZqokGYAc-/0/1749165715177?e=1762992000&v=beta&t=E_lTaMGdMDm_XHqiFZQEPzqZPZSIDLo1AzSHO-AJ3gg",
-          onLogout: () {
-            debugPrint("Logout realizado!");
-          },
-        ),
-      ],
-    );
+          ),
+        ],
+      ),
+      UserMenuDesktop(
+        userName: authState.name.isNotEmpty ? authState.name : "Usuário",
+        userEmail: authState.email.isNotEmpty ? authState.email : "email@email.com",
+        userImageUrl:
+            "https://media.licdn.com/dms/image/v2/D4D03AQFbnY31wEJ2Xw/profile-displayphoto-shrink_800_800/B4DZdCZqokGYAc-/0/1749165715177?e=1762992000&v=beta&t=E_lTaMGdMDm_XHqiFZQEPzqZPZSIDLo1AzSHO-AJ3gg",
+        onLogout: () async {
+          final authController = AuthController(authRepository: AuthRepository(dioClient: DioClient()));
+          await authController.logout(authState);
+          context.go('/login');
+        },
+      ),
+    ],
+  );
+}
+
+String saudacaoDoDia() {
+  final hora = DateTime.now().hour;
+
+  if (hora >= 5 && hora < 12) {
+    return "Bom dia,";
+  } else if (hora >= 12 && hora < 18) {
+    return "Boa tarde,";
+  } else {
+    return "Boa noite,";
   }
+}
+
+
 
   // ====================== TÍTULO DAS SEÇÕES ==============================
   Widget _buildSectionTitle(String title) {
@@ -212,7 +236,10 @@ class _HomeDesktopScreenState extends State<HomeDesktopScreen> {
               ),
               if (trendPositive != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: trendPositive
                         ? const Color(0xFFE8F5E9)
@@ -290,10 +317,7 @@ class _HomeDesktopScreenState extends State<HomeDesktopScreen> {
           ),
         ),
         const SizedBox(width: 16),
-        Expanded(
-          flex: 1,
-          child: _buildQuickGoalStats(context),
-        ),
+        Expanded(flex: 1, child: _buildQuickGoalStats(context)),
       ],
     );
   }
@@ -312,10 +336,7 @@ class _HomeDesktopScreenState extends State<HomeDesktopScreen> {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                AppColors.primary,
-                AppColors.primary.withOpacity(0.8),
-              ],
+              colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
             ),
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
@@ -368,13 +389,14 @@ class _HomeDesktopScreenState extends State<HomeDesktopScreen> {
               const SizedBox(height: 16),
               // Indicador de clique
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 8,
+                  horizontal: 12,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.3),
-                  ),
+                  border: Border.all(color: Colors.white.withOpacity(0.3)),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -413,7 +435,9 @@ class _HomeDesktopScreenState extends State<HomeDesktopScreen> {
     final percentage = (currentValue / targetValue).clamp(0.0, 1.0);
     final remaining = targetValue - currentValue;
     final daysRemaining = deadline.difference(DateTime.now()).inDays;
-    final weeklyTarget = daysRemaining > 0 ? (remaining / (daysRemaining / 7)) : 0;
+    final weeklyTarget = daysRemaining > 0
+        ? (remaining / (daysRemaining / 7))
+        : 0;
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -445,7 +469,10 @@ class _HomeDesktopScreenState extends State<HomeDesktopScreen> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
@@ -462,7 +489,7 @@ class _HomeDesktopScreenState extends State<HomeDesktopScreen> {
             ],
           ),
           const SizedBox(height: 20),
-          
+
           // Barra de Progresso
           LinearPercentIndicator(
             padding: EdgeInsets.zero,
@@ -474,9 +501,9 @@ class _HomeDesktopScreenState extends State<HomeDesktopScreen> {
             animation: true,
             animationDuration: 1000,
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // Informações da Meta
           Row(
             children: [
@@ -496,16 +523,20 @@ class _HomeDesktopScreenState extends State<HomeDesktopScreen> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           Divider(color: Colors.grey[200], height: 1),
-          
+
           const SizedBox(height: 16),
-          
+
           Row(
             children: [
-              Icon(Icons.calendar_today_rounded, size: 16, color: Colors.grey[600]),
+              Icon(
+                Icons.calendar_today_rounded,
+                size: 16,
+                color: Colors.grey[600],
+              ),
               const SizedBox(width: 8),
               Text(
                 "Prazo: ${deadline.day}/${deadline.month}/${deadline.year}",
@@ -517,12 +548,16 @@ class _HomeDesktopScreenState extends State<HomeDesktopScreen> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           Row(
             children: [
-              Icon(Icons.trending_up_rounded, size: 16, color: Colors.grey[600]),
+              Icon(
+                Icons.trending_up_rounded,
+                size: 16,
+                color: Colors.grey[600],
+              ),
               const SizedBox(width: 8),
               Text(
                 "Economizar R\$ ${weeklyTarget.toStringAsFixed(2)}/semana",
@@ -534,12 +569,16 @@ class _HomeDesktopScreenState extends State<HomeDesktopScreen> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           Row(
             children: [
-              Icon(Icons.access_time_rounded, size: 16, color: Colors.grey[600]),
+              Icon(
+                Icons.access_time_rounded,
+                size: 16,
+                color: Colors.grey[600],
+              ),
               const SizedBox(width: 8),
               Text(
                 "$daysRemaining dias restantes",
@@ -621,7 +660,8 @@ class _HomeDesktopScreenState extends State<HomeDesktopScreen> {
         "tipo": "Receita",
         "categoria": "Salário",
         "descricao": "Pagamento Mensal",
-        "avatar": "https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=100&h=100&fit=crop",
+        "avatar":
+            "https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=100&h=100&fit=crop",
       },
       {
         "valor": "R\$ 120,00",
@@ -629,7 +669,8 @@ class _HomeDesktopScreenState extends State<HomeDesktopScreen> {
         "tipo": "Despesa",
         "categoria": "Alimentação",
         "descricao": "Supermercado",
-        "avatar": "https://images.unsplash.com/photo-1502685104226-ee32379fefbe?w=100&h=100&fit=crop",
+        "avatar":
+            "https://images.unsplash.com/photo-1502685104226-ee32379fefbe?w=100&h=100&fit=crop",
       },
       {
         "valor": "R\$ 75,00",
@@ -637,7 +678,8 @@ class _HomeDesktopScreenState extends State<HomeDesktopScreen> {
         "tipo": "Despesa",
         "categoria": "Transporte",
         "descricao": "Uber",
-        "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop",
+        "avatar":
+            "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop",
       },
       {
         "valor": "R\$ 420,00",
@@ -645,7 +687,8 @@ class _HomeDesktopScreenState extends State<HomeDesktopScreen> {
         "tipo": "Receita",
         "categoria": "Freelance",
         "descricao": "Projeto Web",
-        "avatar": "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=100&h=100&fit=crop",
+        "avatar":
+            "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=100&h=100&fit=crop",
       },
     ];
 
@@ -698,7 +741,10 @@ class _HomeDesktopScreenState extends State<HomeDesktopScreen> {
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -707,7 +753,7 @@ class _HomeDesktopScreenState extends State<HomeDesktopScreen> {
             ],
           ),
           const SizedBox(height: 24),
-          
+
           // Cabeçalho da Tabela
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -725,9 +771,9 @@ class _HomeDesktopScreenState extends State<HomeDesktopScreen> {
               ],
             ),
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           // Linhas da Tabela
           ...transactions.map((t) => _buildTransactionRow(t)).toList(),
         ],
@@ -748,15 +794,13 @@ class _HomeDesktopScreenState extends State<HomeDesktopScreen> {
 
   Widget _buildTransactionRow(Map<String, String> transaction) {
     final isReceita = transaction["tipo"] == "Receita";
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       margin: const EdgeInsets.only(bottom: 4),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: Colors.grey[200]!, width: 1),
-        ),
+        border: Border(bottom: BorderSide(color: Colors.grey[200]!, width: 1)),
       ),
       child: Row(
         children: [
@@ -800,10 +844,7 @@ class _HomeDesktopScreenState extends State<HomeDesktopScreen> {
             flex: 2,
             child: Text(
               transaction["data"]!,
-              style: GoogleFonts.inter(
-                fontSize: 13,
-                color: Colors.grey[600],
-              ),
+              style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[600]),
             ),
           ),
           Expanded(

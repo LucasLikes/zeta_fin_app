@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:zeta_fin_app/core/state/auth_state.dart';
 import 'package:zeta_fin_app/core/theme/app_colors.dart';
 import 'package:zeta_fin_app/core/theme/app_text_styles.dart';
 import 'package:zeta_fin_app/core/services/dio_client.dart';
@@ -40,40 +42,38 @@ class _LoginDesktopScreenState extends State<LoginDesktopScreen> {
   }
 
   void _login() async {
-    setState(() => _errorMessage = null);
+  setState(() => _errorMessage = null);
 
-    if (!_formKey.currentState!.validate()) return;
+  if (!_formKey.currentState!.validate()) return;
 
-    String email = _emailController.text.trim();
-    String password = _passwordController.text;
+  String email = _emailController.text.trim();
+  String password = _passwordController.text;
 
-    setState(() => _isLoading = true);
+  setState(() => _isLoading = true);
 
-    try {
-      await _authController.login(email, password);
+  try {
+    final authState = Provider.of<AuthState>(context, listen: false);
 
-      if (!mounted) return;
+    await _authController.login(email, password, authState);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Login realizado com sucesso!'),
-          backgroundColor: AppColors.success,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
+    if (!mounted) return;
 
-      context.go('/home');
-    } catch (e) {
-      String errorMessage = 'Erro ao realizar login. Tente novamente.';
-      setState(() {
-        _errorMessage = errorMessage;
-        _isLoading = false;
-      });
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Login realizado com sucesso!'),
+        backgroundColor: AppColors.success,
+      ),
+    );
+
+    context.go('/home'); // ou deixe o authState redirecionar
+  } catch (e) {
+    setState(() {
+      _errorMessage = 'Erro ao realizar login. Tente novamente.';
+      _isLoading = false;
+    });
   }
+}
+
 
   void _handleGoogleSignIn() async {
     ScaffoldMessenger.of(context).showSnackBar(
