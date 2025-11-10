@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:provider/provider.dart';
 import 'dart:typed_data';
+
+import 'package:zeta_fin_app/features/expenses/controllers/transaction_controller.dart';
 
 class AddTransactionPopup extends StatefulWidget {
   const AddTransactionPopup({super.key});
@@ -144,61 +147,58 @@ class _AddTransactionPopupState extends State<AddTransactionPopup>
   }
 
   Future<void> _submitIncome() async {
-  if (_incomeValueController.text.isEmpty ||
-      _incomeDescriptionController.text.isEmpty ||
-      _selectedIncomeCategory == null ||
-      _incomeDateController.text.isEmpty) {
-    _showSnackBar('Por favor, preencha todos os campos', isError: true);
-    return;
-  }
-
-  setState(() => _isLoading = true);
-
-  try {
-    final parsedValue =
-        double.tryParse(_incomeValueController.text.replaceAll(',', '.'));
-    if (parsedValue == null) {
-      _showSnackBar('Valor inválido', isError: true);
+    if (_incomeValueController.text.isEmpty ||
+        _incomeDescriptionController.text.isEmpty ||
+        _selectedIncomeCategory == null ||
+        _incomeDateController.text.isEmpty) {
+      _showSnackBar('Por favor, preencha todos os campos', isError: true);
       return;
     }
 
-    // Preparar dados para enviar ao backend
-    final incomeData = {
-      'type': 0, // 0 = income, conforme seu backend
-      'value': parsedValue,
-      'description': _incomeDescriptionController.text,
-      'category': _selectedIncomeCategory,
-      'expenseType': null, // receita não possui tipo de despesa
-      'date': DateTime.parse(_incomeDateController.text).toIso8601String(),
-      'hasReceipt': false,
-      'userId': 'USER_ID_PLACEHOLDER', // Substituir pelo ID do usuário logado
-    };
+    setState(() => _isLoading = true);
 
-    // TODO: Chamar endpoint do backend
-    // Exemplo:
-    // await transactionController.createTransaction(
-    //   type: 'income',
-    //   value: parsedValue,
-    //   description: _incomeDescriptionController.text,
-    //   category: _selectedIncomeCategory!,
-    //   date: _incomeDateController.text,
-    // );
+    try {
+      final parsedValue = double.tryParse(
+        _incomeValueController.text.replaceAll(',', '.'),
+      );
+      if (parsedValue == null || parsedValue <= 0) {
+        _showSnackBar('Valor inválido', isError: true);
+        setState(() => _isLoading = false);
+        return;
+      }
 
-    await Future.delayed(const Duration(seconds: 1)); // Simulação
+      // Pega o controller do Provider
+      final transactionController = Provider.of<TransactionController>(
+        context,
+        listen: false,
+      );
 
-    _showSnackBar('Receita adicionada com sucesso!', isError: false);
+      // Chama o método createTransaction do controller
+      final transaction = await transactionController.createTransaction(
+        type: 'income',
+        value: parsedValue,
+        description: _incomeDescriptionController.text,
+        category: _selectedIncomeCategory!,
+        date: DateTime.parse(_incomeDateController.text),
+      );
 
-    if (mounted) {
-      Navigator.of(context).pop(true); // Fecha o diálogo e retorna sucesso
-    }
-  } catch (e) {
-    _showSnackBar('Erro ao adicionar receita: $e', isError: true);
-  } finally {
-    if (mounted) {
-      setState(() => _isLoading = false);
+      if (transaction != null) {
+        _showSnackBar('Receita adicionada com sucesso!', isError: false);
+
+        if (mounted) {
+          Navigator.of(context).pop(true);
+        }
+      } else {
+        _showSnackBar('Erro ao adicionar receita', isError: true);
+      }
+    } catch (e) {
+      _showSnackBar('Erro ao adicionar receita: $e', isError: true);
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
-}
 
   Future<void> _submitExpense() async {
     if (_expenseValueController.text.isEmpty ||
@@ -213,34 +213,46 @@ class _AddTransactionPopupState extends State<AddTransactionPopup>
     setState(() => _isLoading = true);
 
     try {
-      // Preparar dados para enviar ao backend
-      final expenseData = {
-        'type': 'expense',
-        'value': double.parse(_expenseValueController.text.replaceAll(',', '.')),
-        'description': _expenseDescriptionController.text,
-        'category': _selectedExpenseCategory,
-        'expenseType': _selectedExpenseType, // fixas, variaveis, desnecessarios
-        'date': _expenseDateController.text,
-        'userId': 'USER_ID_PLACEHOLDER', // Substituir pelo ID do usuário logado
-        'hasReceipt': _uploadedFileBytes != null,
-      };
-
-      // TODO: Chamar endpoint do backend
-      // await _transactionController.createTransaction(...);
-
-      // Se houver arquivo de recibo, enviar separadamente
-      if (_uploadedFileBytes != null) {
-        // TODO: Upload do arquivo
-        // await _transactionController.createTransactionWithReceipt(...);
+      final parsedValue = double.tryParse(
+        _expenseValueController.text.replaceAll(',', '.'),
+      );
+      if (parsedValue == null || parsedValue <= 0) {
+        _showSnackBar('Valor inválido', isError: true);
+        setState(() => _isLoading = false);
+        return;
       }
 
-      await Future.delayed(const Duration(seconds: 1)); // Simulação
+      // Pega o controller do Provider
+      final transactionController = Provider.of<TransactionController>(
+        context,
+        listen: false,
+      );
 
-      _showSnackBar('Despesa adicionada com sucesso!', isError: false);
-      
-      // Fecha o diálogo e retorna true para indicar sucesso
-      if (mounted) {
-        Navigator.of(context).pop(true);
+      // Chama o método createTransaction do controller
+      final transaction = await transactionController.createTransaction(
+        type: 'expense',
+        value: parsedValue,
+        description: _expenseDescriptionController.text,
+        category: _selectedExpenseCategory!,
+        date: DateTime.parse(_expenseDateController.text),
+        expenseType:
+            _selectedExpenseType, // 'fixas', 'variaveis', 'desnecessarios'
+        hasReceipt: _uploadedFileBytes != null,
+      );
+
+      if (transaction != null) {
+        _showSnackBar('Despesa adicionada com sucesso!', isError: false);
+
+        // TODO: Se houver arquivo de recibo, enviar separadamente
+        // if (_uploadedFileBytes != null) {
+        //   await _uploadReceipt(transaction.id);
+        // }
+
+        if (mounted) {
+          Navigator.of(context).pop(true);
+        }
+      } else {
+        _showSnackBar('Erro ao adicionar despesa', isError: true);
       }
     } catch (e) {
       _showSnackBar('Erro ao adicionar despesa: $e', isError: true);
@@ -253,7 +265,7 @@ class _AddTransactionPopupState extends State<AddTransactionPopup>
 
   void _showSnackBar(String message, {required bool isError}) {
     if (!mounted) return;
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -262,7 +274,6 @@ class _AddTransactionPopupState extends State<AddTransactionPopup>
       ),
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -282,10 +293,7 @@ class _AddTransactionPopupState extends State<AddTransactionPopup>
             Expanded(
               child: TabBarView(
                 controller: _tabController,
-                children: [
-                  _buildIncomeTab(),
-                  _buildExpenseTab(),
-                ],
+                children: [_buildIncomeTab(), _buildExpenseTab()],
               ),
             ),
           ],
@@ -338,10 +346,7 @@ class _AddTransactionPopupState extends State<AddTransactionPopup>
                 const SizedBox(height: 4),
                 Text(
                   'Adicione receitas ou despesas de forma inteligente',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: Colors.white70,
-                  ),
+                  style: GoogleFonts.inter(fontSize: 14, color: Colors.white70),
                 ),
               ],
             ),
@@ -375,14 +380,8 @@ class _AddTransactionPopupState extends State<AddTransactionPopup>
           fontWeight: FontWeight.w700,
         ),
         tabs: const [
-          Tab(
-            icon: Icon(Icons.arrow_downward_rounded),
-            text: 'Receitas',
-          ),
-          Tab(
-            icon: Icon(Icons.arrow_upward_rounded),
-            text: 'Despesas',
-          ),
+          Tab(icon: Icon(Icons.arrow_downward_rounded), text: 'Receitas'),
+          Tab(icon: Icon(Icons.arrow_upward_rounded), text: 'Despesas'),
         ],
       ),
     );
@@ -416,7 +415,8 @@ class _AddTransactionPopupState extends State<AddTransactionPopup>
             hint: 'Selecione uma categoria',
             value: _selectedIncomeCategory,
             items: _incomeCategories,
-            onChanged: (value) => setState(() => _selectedIncomeCategory = value),
+            onChanged: (value) =>
+                setState(() => _selectedIncomeCategory = value),
             icon: Icons.category_outlined,
           ),
           const SizedBox(height: 16),
@@ -474,7 +474,8 @@ class _AddTransactionPopupState extends State<AddTransactionPopup>
             hint: 'Selecione uma categoria',
             value: _selectedExpenseCategory,
             items: _expenseCategories,
-            onChanged: (value) => setState(() => _selectedExpenseCategory = value),
+            onChanged: (value) =>
+                setState(() => _selectedExpenseCategory = value),
             icon: Icons.category_outlined,
           ),
           const SizedBox(height: 16),
@@ -519,16 +520,28 @@ class _AddTransactionPopupState extends State<AddTransactionPopup>
           style: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.grey[700],
+            color: Colors.grey[800], // label escuro
           ),
         ),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
           keyboardType: keyboardType,
+          style: const TextStyle(
+            // <- texto digitado
+            color: Colors.black,
+            fontSize: 16,
+          ),
           decoration: InputDecoration(
             hintText: hint,
-            prefixIcon: Icon(icon, color: Colors.grey[600]),
+            hintStyle: TextStyle(
+              // <- texto do hint
+              color: Colors.grey[600],
+            ),
+            prefixIcon: Icon(
+              icon,
+              color: Colors.grey[700], // <- ícone
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: Colors.grey[300]!),
@@ -537,9 +550,9 @@ class _AddTransactionPopupState extends State<AddTransactionPopup>
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: Colors.grey[300]!),
             ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF1A237E), width: 2),
+            focusedBorder: const OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(12)),
+              borderSide: BorderSide(color: Color(0xFF1A237E), width: 2),
             ),
             filled: true,
             fillColor: Colors.grey[50],
@@ -550,53 +563,69 @@ class _AddTransactionPopupState extends State<AddTransactionPopup>
   }
 
   Widget _buildDropdown({
-    required String label,
-    required String hint,
-    required String? value,
-    required List<String> items,
-    required Function(String?) onChanged,
-    required IconData icon,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey[700],
+  required String label,
+  required String hint,
+  required String? value,
+  required List<String> items,
+  required Function(String?) onChanged,
+  required IconData icon,
+}) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        label,
+        style: GoogleFonts.inter(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: Colors.grey[800], // cor do label (mais escuro)
+        ),
+      ),
+      const SizedBox(height: 8),
+      DropdownButtonFormField<String>(
+        value: value,
+        hint: Text(
+          hint,
+          style: TextStyle( // cor do hint
+            color: Colors.grey[600],
           ),
         ),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          value: value,
-          hint: Text(hint),
-          decoration: InputDecoration(
-            prefixIcon: Icon(icon, color: Colors.grey[600]),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF1A237E), width: 2),
-            ),
-            filled: true,
-            fillColor: Colors.grey[50],
+        decoration: InputDecoration(
+          prefixIcon: Icon(
+            icon,
+            color: Colors.grey[700], // ícone mais escuro
           ),
-          items: items.map((item) {
-            return DropdownMenuItem(value: item, child: Text(item));
-          }).toList(),
-          onChanged: onChanged,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey[300]!),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey[300]!),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Color(0xFF1A237E), width: 2),
+          ),
+          filled: true,
+          fillColor: Colors.grey[50], // fundo do campo
         ),
-      ],
-    );
-  }
+        items: items.map((item) {
+          return DropdownMenuItem<String>(
+            value: item,
+            child: Text(
+              item,
+              style: const TextStyle( // cor do texto da opção
+                color: Colors.black, // texto preto
+              ),
+            ),
+          );
+        }).toList(),
+        onChanged: onChanged,
+      ),
+    ],
+  );
+}
 
   Widget _buildDateField({
     required TextEditingController controller,
@@ -610,16 +639,21 @@ class _AddTransactionPopupState extends State<AddTransactionPopup>
           style: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.grey[700],
+            color: Colors.grey[800],
           ),
         ),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
           readOnly: true,
+          style: const TextStyle(color: Colors.black, fontSize: 16),
           decoration: InputDecoration(
             hintText: 'Selecione a data',
-            prefixIcon: Icon(Icons.calendar_today_rounded, color: Colors.grey[600]),
+            hintStyle: TextStyle(color: Colors.grey[600]),
+            prefixIcon: Icon(
+              Icons.calendar_today_rounded,
+              color: Colors.grey[700],
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: Colors.grey[300]!),
@@ -630,7 +664,7 @@ class _AddTransactionPopupState extends State<AddTransactionPopup>
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF1A237E), width: 2),
+              borderSide: BorderSide(color: Color(0xFF1A237E), width: 2),
             ),
             filled: true,
             fillColor: Colors.grey[50],
@@ -669,7 +703,8 @@ class _AddTransactionPopupState extends State<AddTransactionPopup>
             final isSelected = _selectedExpenseType == type['value'];
             return Expanded(
               child: GestureDetector(
-                onTap: () => setState(() => _selectedExpenseType = type['value']),
+                onTap: () =>
+                    setState(() => _selectedExpenseType = type['value']),
                 child: Container(
                   margin: const EdgeInsets.only(right: 8),
                   padding: const EdgeInsets.all(16),
@@ -751,62 +786,62 @@ class _AddTransactionPopupState extends State<AddTransactionPopup>
                 ],
               )
             : _isProcessingOCR
-                ? Column(
-                    children: [
-                      const CircularProgressIndicator(),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Processando recibo...',
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey[700],
-                        ),
-                      ),
-                    ],
-                  )
-                : Row(
-                    children: [
-                      Icon(
-                        Icons.check_circle_rounded,
-                        color: Colors.green,
-                        size: 32,
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _uploadedFileName!,
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Recibo processado com sucesso',
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: Colors.green,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          setState(() {
-                            _uploadedFileBytes = null;
-                            _uploadedFileName = null;
-                          });
-                        },
-                        icon: const Icon(Icons.close_rounded),
-                      ),
-                    ],
+            ? Column(
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Processando recibo...',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[700],
+                    ),
                   ),
+                ],
+              )
+            : Row(
+                children: [
+                  Icon(
+                    Icons.check_circle_rounded,
+                    color: Colors.green,
+                    size: 32,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _uploadedFileName!,
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Recibo processado com sucesso',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: Colors.green,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      setState(() {
+                        _uploadedFileBytes = null;
+                        _uploadedFileName = null;
+                      });
+                    },
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
       ),
     );
   }

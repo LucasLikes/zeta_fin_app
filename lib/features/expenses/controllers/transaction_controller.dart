@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:zeta_fin_app/core/services/transaction_service.dart';
+import 'package:zeta_fin_app/features/expenses/services/transaction_service.dart';
 import 'package:zeta_fin_app/features/expenses/models/transaction_model.dart';
 
 class TransactionController extends ChangeNotifier {
@@ -37,32 +37,38 @@ class TransactionController extends ChangeNotifier {
   // 📋 Carrega todas as transações
   // ==============================================================
   Future<void> loadTransactions({
-    String? type,
-    String? startDate,
-    String? endDate,
-    String? category,
-    String? expenseType,
-  }) async {
-    _setLoading(true);
-    _errorMessage = null;
+  String? type,
+  String? startDate,
+  String? endDate,
+  String? category,
+  String? expenseType,
+  String? orderBy = 'date',  // Adicionando a ordenação (campo por padrão: 'date')
+  String? sort = 'desc',     // Adicionando a direção da ordenação (por padrão: 'desc')
+}) async {
+  _setLoading(true);
+  _errorMessage = null;
 
-    try {
-      final transactions = await _transactionService.getTransactions(
-        type: type,
-        startDate: startDate,
-        endDate: endDate,
-        category: category,
-        expenseType: expenseType,
-        limit: 100,
-      );
+  try {
+    final transactions = await _transactionService.getTransactions(
+      type: type,
+      startDate: startDate,
+      endDate: endDate,
+      category: category,
+      expenseType: expenseType,
+      limit: 100,
+      orderBy: orderBy,
+      sort: sort,
+    );
 
-      _transactions = transactions;
-      _setLoading(false);
-    } catch (e) {
-      _errorMessage = 'Erro ao carregar transações: $e';
-      _setLoading(false);
-    }
+    _transactions = transactions;
+    _setLoading(false);
+    notifyListeners();  // Notificar os ouvintes para atualizar a interface
+  } catch (e) {
+    _errorMessage = 'Erro ao carregar transações: $e';
+    _setLoading(false);
+    notifyListeners();  // Notificar os ouvintes, mesmo em caso de erro
   }
+}
 
   // ==============================================================
   // 💰 Carrega resumo financeiro
@@ -82,27 +88,32 @@ class TransactionController extends ChangeNotifier {
   // 🔄 Carrega tudo
   // ==============================================================
   Future<void> loadAll({String? month}) async {
-    _setLoading(true);
-    _errorMessage = null;
+  _setLoading(true);
+  _errorMessage = null;
 
-    try {
-      final now = DateTime.now();
-      final monthStr = month ?? '${now.year}-${now.month.toString().padLeft(2, '0')}';
+  try {
+    final now = DateTime.now();
+    final monthStr = month ?? '${now.year}-${now.month.toString().padLeft(2, '0')}';
 
-      await Future.wait([
-        loadTransactions(
-          startDate: '$monthStr-01',
-          endDate: DateTime(now.year, now.month + 1, 0).toIso8601String(),
-        ),
-        loadSummary(month: monthStr),
-      ]);
+    await Future.wait([
+      loadTransactions(
+        startDate: '$monthStr-01',
+        endDate: DateTime(now.year, now.month + 1, 0).toIso8601String(),
+      ),
+      loadSummary(month: monthStr),
+    ]);
 
-      _setLoading(false);
-    } catch (e) {
-      _errorMessage = 'Erro ao carregar dados: $e';
-      _setLoading(false);
-    }
+    // Ordena as transações pela data (do mais recente para o mais antigo)
+    _transactions.sort((a, b) => b.date.compareTo(a.date));  // Ordenação aqui
+
+    _setLoading(false);
+    notifyListeners();
+  } catch (e) {
+    _errorMessage = 'Erro ao carregar dados: $e';
+    _setLoading(false);
+    notifyListeners();
   }
+}
 
   // ==============================================================
   // ➕ Cria uma nova transação

@@ -6,11 +6,14 @@ import 'package:provider/provider.dart';
 import 'package:zeta_fin_app/core/services/dio_client.dart';
 import 'package:zeta_fin_app/core/state/auth_state.dart';
 import 'package:zeta_fin_app/core/theme/app_colors.dart';
+import 'package:zeta_fin_app/features/expenses/controllers/transaction_controller.dart';
+import 'package:zeta_fin_app/features/expenses/models/transaction_model.dart';
 import 'package:zeta_fin_app/features/goals/controllers/user_auth_controller.dart';
 import 'package:zeta_fin_app/features/goals/screens/goal/desktop/goals_desktop.dart';
 import 'package:zeta_fin_app/features/goals/widgets/menu_desktop.dart';
 import 'package:zeta_fin_app/features/goals/widgets/user_menu_desktop.dart';
 import 'package:zeta_fin_app/features/repositories/user_auth_repository.dart';
+import 'package:intl/intl.dart';
 // Importe a tela de metas para usar o popup
 
 class HomeDesktopScreen extends StatefulWidget {
@@ -21,6 +24,22 @@ class HomeDesktopScreen extends StatefulWidget {
 }
 
 class _HomeDesktopScreenState extends State<HomeDesktopScreen> {
+  late TransactionController _transactionController;
+
+  @override
+  void initState() {
+    super.initState();
+    _transactionController = Provider.of<TransactionController>(
+      context,
+      listen: false,
+    );
+
+    // Carregar dados logo ao iniciar
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _transactionController.loadAll(); // Carregar as transações
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -50,7 +69,13 @@ class _HomeDesktopScreenState extends State<HomeDesktopScreen> {
                     // ========== SEÇÃO: CONTROLE PESSOAL ==========
                     _buildSectionTitle("Controle Pessoal"),
                     const SizedBox(height: 16),
-                    _buildFinancialOverviewCards(),
+
+                    // Usando o Consumer para acessar o estado de TransactionController
+                    Consumer<TransactionController>(
+                      builder: (context, controller, child) {
+                        return _buildFinancialOverviewCards(controller);
+                      },
+                    ),
                     const SizedBox(height: 40),
 
                     // ========== SEÇÃO: METAS ==========
@@ -62,7 +87,12 @@ class _HomeDesktopScreenState extends State<HomeDesktopScreen> {
                     // ========== SEÇÃO: TRANSAÇÕES RECENTES ==========
                     _buildSectionTitle("Transações Recentes"),
                     const SizedBox(height: 16),
-                    _buildTransactionTable(),
+                    Consumer<TransactionController>(
+                      builder: (context, controller, child) {
+                        return _buildTransactionTable(controller);
+                      },
+                    ),
+                    const SizedBox(height: 40),
                   ],
                 ),
               ),
@@ -74,62 +104,64 @@ class _HomeDesktopScreenState extends State<HomeDesktopScreen> {
   }
 
   // ====================== HEADER ==============================
-Widget _buildHeader() {
-  final authState = Provider.of<AuthState>(context);
+  Widget _buildHeader() {
+    final authState = Provider.of<AuthState>(context);
 
-  return Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            saudacaoDoDia(), // aqui usamos a função
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey[600],
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              saudacaoDoDia(), // aqui usamos a função
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[600],
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            authState.name.isNotEmpty ? authState.name : "Usuário",
-            style: GoogleFonts.inter(
-              fontSize: 32,
-              fontWeight: FontWeight.w700,
-              color: Colors.black87,
+            const SizedBox(height: 4),
+            Text(
+              authState.name.isNotEmpty ? authState.name : "Usuário",
+              style: GoogleFonts.inter(
+                fontSize: 32,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+              ),
             ),
-          ),
-        ],
-      ),
-      UserMenuDesktop(
-        userName: authState.name.isNotEmpty ? authState.name : "Usuário",
-        userEmail: authState.email.isNotEmpty ? authState.email : "email@email.com",
-        userImageUrl:
-            "https://media.licdn.com/dms/image/v2/D4D03AQFbnY31wEJ2Xw/profile-displayphoto-shrink_800_800/B4DZdCZqokGYAc-/0/1749165715177?e=1762992000&v=beta&t=E_lTaMGdMDm_XHqiFZQEPzqZPZSIDLo1AzSHO-AJ3gg",
-        onLogout: () async {
-          final authController = AuthController(authRepository: AuthRepository(dioClient: DioClient()));
-          await authController.logout(authState);
-          context.go('/login');
-        },
-      ),
-    ],
-  );
-}
-
-String saudacaoDoDia() {
-  final hora = DateTime.now().hour;
-
-  if (hora >= 5 && hora < 12) {
-    return "Bom dia,";
-  } else if (hora >= 12 && hora < 18) {
-    return "Boa tarde,";
-  } else {
-    return "Boa noite,";
+          ],
+        ),
+        UserMenuDesktop(
+          userName: authState.name.isNotEmpty ? authState.name : "Usuário",
+          userEmail: authState.email.isNotEmpty
+              ? authState.email
+              : "email@email.com",
+          userImageUrl:
+              "https://media.licdn.com/dms/image/v2/D4D03AQFbnY31wEJ2Xw/profile-displayphoto-shrink_800_800/B4DZdCZqokGYAc-/0/1749165715177?e=1762992000&v=beta&t=E_lTaMGdMDm_XHqiFZQEPzqZPZSIDLo1AzSHO-AJ3gg",
+          onLogout: () async {
+            final authController = AuthController(
+              authRepository: AuthRepository(dioClient: DioClient()),
+            );
+            await authController.logout(authState);
+            context.go('/login');
+          },
+        ),
+      ],
+    );
   }
-}
 
+  String saudacaoDoDia() {
+    final hora = DateTime.now().hour;
 
+    if (hora >= 5 && hora < 12) {
+      return "Bom dia,";
+    } else if (hora >= 12 && hora < 18) {
+      return "Boa tarde,";
+    } else {
+      return "Boa noite,";
+    }
+  }
 
   // ====================== TÍTULO DAS SEÇÕES ==============================
   Widget _buildSectionTitle(String title) {
@@ -144,17 +176,30 @@ String saudacaoDoDia() {
   }
 
   // ====================== CARDS DE CONTROLE PESSOAL ==============================
-  Widget _buildFinancialOverviewCards() {
+  Widget _buildFinancialOverviewCards(TransactionController controller) {
+    final summary = controller.summary;
+
+    // Dados dinâmicos ou valores default se não estiverem disponíveis
+    final renda = summary?['income']?['total'] ?? 0.0;
+    final totalGastos = summary?['expense']?['total'] ?? 0.0;
+    final saldoRestante = renda - totalGastos;
+    final contasAPagar = summary?['bills']?['total'] ?? 0.0;
+
+    // Percentual de aumento/diminuição para receitas, despesas e saldo
+    final receitaTrend = "+12.5%"; // Pode vir de algum cálculo
+    final despesaTrend = "-8.3%"; // Pode vir de algum cálculo
+    final saldoTrend = "+4.2%"; // Pode vir de algum cálculo
+
     return Row(
       children: [
         Expanded(
           child: _buildFinanceCard(
             title: "Receitas",
-            value: "R\$ 8.450,00",
+            value: "R\$ ${renda.toStringAsFixed(2)}",
             icon: Icons.arrow_downward_rounded,
             iconColor: const Color(0xFF00C853),
             backgroundColor: const Color(0xFFE8F5E9),
-            trend: "+12.5%",
+            trend: receitaTrend,
             trendPositive: true,
           ),
         ),
@@ -162,11 +207,11 @@ String saudacaoDoDia() {
         Expanded(
           child: _buildFinanceCard(
             title: "Despesas",
-            value: "R\$ 4.320,00",
+            value: "R\$ ${totalGastos.toStringAsFixed(2)}",
             icon: Icons.arrow_upward_rounded,
             iconColor: const Color(0xFFFF5252),
             backgroundColor: const Color(0xFFFFEBEE),
-            trend: "-8.3%",
+            trend: despesaTrend,
             trendPositive: false,
           ),
         ),
@@ -174,11 +219,11 @@ String saudacaoDoDia() {
         Expanded(
           child: _buildFinanceCard(
             title: "Saldo Disponível",
-            value: "R\$ 4.130,00",
+            value: "R\$ ${saldoRestante.toStringAsFixed(2)}",
             icon: Icons.account_balance_wallet_rounded,
             iconColor: const Color(0xFF2196F3),
             backgroundColor: const Color(0xFFE3F2FD),
-            trend: "+4.2%",
+            trend: saldoTrend,
             trendPositive: true,
           ),
         ),
@@ -186,11 +231,12 @@ String saudacaoDoDia() {
         Expanded(
           child: _buildFinanceCard(
             title: "Contas a Pagar",
-            value: "R\$ 1.250,00",
+            value: "R\$ ${contasAPagar.toStringAsFixed(2)}",
             icon: Icons.receipt_long_rounded,
             iconColor: const Color(0xFFFF9800),
             backgroundColor: const Color(0xFFFFF3E0),
-            trend: "3 pendentes",
+            trend:
+                "3 pendentes", // O número de contas pode vir do backend também
             trendPositive: null,
           ),
         ),
@@ -652,45 +698,31 @@ String saudacaoDoDia() {
   }
 
   // ====================== TABELA DE TRANSAÇÕES ==============================
-  Widget _buildTransactionTable() {
+  Widget _buildTransactionTable(TransactionController controller) {
+    // Pegando todas as transações carregadas pelo controlador, incluindo as de receita
     final transactions = [
-      {
-        "valor": "R\$ 320,00",
-        "data": "10/10/2025",
-        "tipo": "Receita",
-        "categoria": "Salário",
-        "descricao": "Pagamento Mensal",
-        "avatar":
-            "https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=100&h=100&fit=crop",
-      },
-      {
-        "valor": "R\$ 120,00",
-        "data": "11/10/2025",
-        "tipo": "Despesa",
-        "categoria": "Alimentação",
-        "descricao": "Supermercado",
-        "avatar":
-            "https://images.unsplash.com/photo-1502685104226-ee32379fefbe?w=100&h=100&fit=crop",
-      },
-      {
-        "valor": "R\$ 75,00",
-        "data": "12/10/2025",
-        "tipo": "Despesa",
-        "categoria": "Transporte",
-        "descricao": "Uber",
-        "avatar":
-            "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop",
-      },
-      {
-        "valor": "R\$ 420,00",
-        "data": "14/10/2025",
-        "tipo": "Receita",
-        "categoria": "Freelance",
-        "descricao": "Projeto Web",
-        "avatar":
-            "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=100&h=100&fit=crop",
-      },
+      ...controller.fixedExpenses, // Transações fixas
+      ...controller.variableExpenses, // Transações variáveis
+      ...controller.unnecessaryExpenses, // Transações desnecessárias
+      ...controller.incomes, // Adicionando as transações de receita
     ];
+
+    // Ordenando as transações pela data, da mais recente para a mais antiga
+    transactions.sort((a, b) => b.date.compareTo(a.date));
+
+    // Verificar se há transações, se não, mostrar mensagem de 'Sem Transações'
+    if (transactions.isEmpty) {
+      return Center(
+        child: Text(
+          'Nenhuma transação encontrada.',
+          style: GoogleFonts.inter(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[600],
+          ),
+        ),
+      );
+    }
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -775,7 +807,7 @@ String saudacaoDoDia() {
           const SizedBox(height: 8),
 
           // Linhas da Tabela
-          ...transactions.map((t) => _buildTransactionRow(t)).toList(),
+          ...transactions.map((t) => _buildTransactionRow(t)),
         ],
       ),
     );
@@ -792,8 +824,8 @@ String saudacaoDoDia() {
     );
   }
 
-  Widget _buildTransactionRow(Map<String, String> transaction) {
-    final isReceita = transaction["tipo"] == "Receita";
+  Widget _buildTransactionRow(Transaction transaction) {
+    final isReceita = transaction.isIncome; // Use the getter isIncome
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -811,7 +843,8 @@ String saudacaoDoDia() {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Image.network(
-                    transaction["avatar"]!,
+                    transaction.receiptUrl ??
+                        'https://gmedia.playstation.com/is/image/SIEPDC/ps-store-listing-thumb-01-en-05nov20?', // Default placeholder image for receipt
                     width: 36,
                     height: 36,
                     fit: BoxFit.cover,
@@ -819,7 +852,9 @@ String saudacaoDoDia() {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  transaction["descricao"]!,
+                  transaction.description.isNotEmpty
+                      ? transaction.description
+                      : "Sem descrição", // Default description
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -832,7 +867,9 @@ String saudacaoDoDia() {
           Expanded(
             flex: 2,
             child: Text(
-              transaction["categoria"]!,
+              transaction.category.isNotEmpty
+                  ? transaction.category
+                  : "Sem categoria", // Default category
               style: GoogleFonts.inter(
                 fontSize: 13,
                 color: Colors.grey[700],
@@ -843,14 +880,16 @@ String saudacaoDoDia() {
           Expanded(
             flex: 2,
             child: Text(
-              transaction["data"]!,
+              DateFormat(
+                'dd/MM/yyyy',
+              ).format(transaction.date), // Format the date
               style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[600]),
             ),
           ),
           Expanded(
             flex: 2,
             child: Text(
-              transaction["valor"]!,
+              "R\$ ${transaction.value.toStringAsFixed(2)}", // Format the value
               style: GoogleFonts.inter(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
@@ -869,7 +908,9 @@ String saudacaoDoDia() {
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
-                transaction["tipo"]!,
+                isReceita
+                    ? 'Receita'
+                    : 'Despesa', // Use 'Receita' or 'Despesa' based on the type
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(
                   fontSize: 12,

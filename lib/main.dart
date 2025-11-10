@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:zeta_fin_app/core/routes/go_router.dart';
 import 'package:zeta_fin_app/core/services/dio_client.dart';
-import 'package:zeta_fin_app/core/services/transaction_service.dart';
+import 'package:zeta_fin_app/features/expenses/controllers/expense_controller.dart';
+import 'package:zeta_fin_app/features/expenses/services/expense_service.dart';
+import 'package:zeta_fin_app/features/expenses/services/transaction_service.dart';
 import 'package:zeta_fin_app/features/repositories/user_auth_repository.dart';
 import 'package:zeta_fin_app/features/goals/controllers/user_auth_controller.dart';
 import 'package:zeta_fin_app/features/expenses/controllers/transaction_controller.dart';
@@ -38,7 +40,12 @@ void main() async {
             transactionService: transactionService,
           ),
         ),
-        
+
+        ChangeNotifierProvider(
+          create: (_) => ExpenseController(
+            expenseService: ExpenseService(dioClient),
+          ),
+        ),
         // Adicione outros controllers aqui conforme necessário
       ],
       child: const MyApp(),

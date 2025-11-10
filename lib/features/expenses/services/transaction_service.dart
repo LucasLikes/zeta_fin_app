@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
-import 'dio_client.dart';
-import '../../features/expenses/models/transaction_model.dart';
+import '../../../core/services/dio_client.dart';
+import '../models/transaction_model.dart';
 
 class TransactionService {
   final DioClient _client;
@@ -70,35 +70,71 @@ class TransactionService {
   // 📋 LISTA TODAS AS TRANSAÇÕES
   // ==============================================================
   Future<List<Transaction>> getTransactions({
-    String? type,
-    String? startDate,
-    String? endDate,
-    String? category,
-    String? expenseType,
-    int page = 1,
-    int limit = 20,
-  }) async {
-    try {
-      final query = {
-        'Page': page,
-        'Limit': limit,
-        if (type != null) 'Type': type,
-        if (startDate != null) 'StartDate': startDate,
-        if (endDate != null) 'EndDate': endDate,
-        if (category != null) 'Category': category,
-        if (expenseType != null) 'ExpenseType': expenseType,
-      };
-
-      final response = await dio.get(_endpoint, queryParameters: query);
-
-      // A resposta vem dentro de data.transactions
-      final list = response.data['data']['transactions'] as List<dynamic>;
-
-      return list.map((t) => Transaction.fromJson(t)).toList();
-    } on DioException catch (e) {
-      throw _handleError(e);
+  String? type,
+  String? startDate,
+  String? endDate,
+  String? category,
+  String? expenseType,
+  int page = 1,
+  int limit = 20,
+  String? orderBy = 'date',
+  String? sort = 'desc',
+}) async {
+  try {
+    // Converte tipo para enum se necessário
+    int? typeEnum;
+    if (type != null) {
+      typeEnum = type.toLowerCase() == 'income' ? 0 : 1;
     }
+
+    int? expenseTypeEnum;
+    if (expenseType != null) {
+      switch (expenseType.toLowerCase()) {
+        case 'fixas':
+          expenseTypeEnum = 0;
+          break;
+        case 'variaveis':
+          expenseTypeEnum = 1;
+          break;
+        case 'desnecessarios':
+          expenseTypeEnum = 2;
+          break;
+      }
+    }
+
+    // Adiciona os parâmetros de ordenação na query
+    final query = {
+      'Page': page,
+      'Limit': limit,
+      if (typeEnum != null) 'Type': typeEnum,
+      if (startDate != null) 'StartDate': startDate,
+      if (endDate != null) 'EndDate': endDate,
+      if (category != null) 'Category': category,
+      if (expenseTypeEnum != null) 'ExpenseType': expenseTypeEnum,
+      if (orderBy != null) 'OrderBy': orderBy,  // Passa a ordenação
+      if (sort != null) 'Sort': sort,          // Passa a direção da ordenação
+    };
+
+    print('📤 Buscando transações com filtros: $query');
+
+    final response = await dio.get(_endpoint, queryParameters: query);
+
+    print('✅ Resposta: ${response.data}');
+
+    // CORREÇÃO: Backend retorna dentro de data.transactions
+    if (response.data['success'] == true && 
+        response.data['data'] != null &&
+        response.data['data']['transactions'] != null) {
+      final list = response.data['data']['transactions'] as List<dynamic>;
+      return list.map((t) => Transaction.fromJson(t)).toList();
+    }
+
+    return [];
+  } on DioException catch (e) {
+    print('❌ Erro ao buscar transações: ${e.response?.data}');
+    throw _handleError(e);
   }
+}
 
   // ==============================================================
   // 🔍 OBTÉM UMA TRANSAÇÃO POR ID
@@ -107,11 +143,11 @@ class TransactionService {
     try {
       final response = await dio.get('$_endpoint/$id');
       
-      if (response.data['data'] != null) {
+      if (response.data['success'] == true && response.data['data'] != null) {
         return Transaction.fromJson(response.data['data']);
       }
       
-      return Transaction.fromJson(response.data);
+      throw Exception('Transação não encontrada');
     } on DioException catch (e) {
       throw _handleError(e);
     }
@@ -137,11 +173,11 @@ class TransactionService {
 
       final response = await dio.put('$_endpoint/$id', data: body);
 
-      if (response.data['data'] != null) {
+      if (response.data['success'] == true && response.data['data'] != null) {
         return Transaction.fromJson(response.data['data']);
       }
       
-      return Transaction.fromJson(response.data);
+      throw Exception('Erro ao atualizar transação');
     } on DioException catch (e) {
       throw _handleError(e);
     }
@@ -173,18 +209,23 @@ class TransactionService {
         if (month != null) 'month': month,
       };
 
+      print('📤 Buscando resumo com filtros: $query');
+
       final response = await dio.get(
         '$_endpoint/summary',
         queryParameters: query,
       );
+
+      print('✅ Resumo recebido: ${response.data}');
       
-      // A resposta pode vir diretamente ou dentro de 'data'
-      if (response.data['data'] != null) {
+      // CORREÇÃO: Backend retorna dentro de 'data'
+      if (response.data['success'] == true && response.data['data'] != null) {
         return response.data['data'] as Map<String, dynamic>;
       }
       
-      return response.data as Map<String, dynamic>;
+      throw Exception('Erro ao buscar resumo');
     } on DioException catch (e) {
+      print('❌ Erro ao buscar resumo: ${e.response?.data}');
       throw _handleError(e);
     }
   }
@@ -195,14 +236,25 @@ class TransactionService {
   Exception _handleError(DioException error) {
     if (error.response != null) {
       final data = error.response!.data;
-      final message = data['message'] ?? data['error']?['message'] ?? 'Erro desconhecido';
+      
+      // Tenta extrair mensagem do formato ApiResponse ou ProblemDetails
+      String message = 'Erro desconhecido';
+      
+      if (data is Map) {
+        message = data['message'] ?? 
+                  data['error']?['message'] ?? 
+                  data['detail'] ?? 
+                  data['title'] ?? 
+                  'Erro desconhecido';
+      }
+      
       final code = error.response!.statusCode?.toString() ?? 'UNKNOWN';
 
       switch (error.response!.statusCode) {
         case 400:
           return ApiException('Requisição inválida: $message', code);
         case 401:
-          return ApiException('Não autorizado: $message', 'UNAUTHORIZED');
+          return ApiException('Não autorizado. Faça login novamente.', 'UNAUTHORIZED');
         case 403:
           return ApiException('Acesso negado: $message', 'FORBIDDEN');
         case 404:
