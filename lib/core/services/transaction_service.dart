@@ -1,22 +1,26 @@
 import 'package:dio/dio.dart';
-import 'dart:typed_data';
+import 'dio_client.dart';
+import '../../features/expenses/models/transaction_model.dart'; // ajuste o path se necessário
 
 class TransactionService {
-  final Dio _dio;
-  static const String baseUrl = 'https://api.zetafin.com/v1';
+  final DioClient _client;
 
-  TransactionService({required Dio dio}) : _dio = dio;
+  TransactionService(this._client);
 
-  // ==================== TRANSAÇÕES ====================
+  Dio get dio => _client.dio;
 
-  /// Cria uma nova transação (receita ou despesa)
-  Future<Map<String, dynamic>> createTransaction({
-    required String type, // 'income' ou 'expense'
+  static const String _endpoint = '/Transactions';
+
+  // ==============================================================
+  // 📦 CRIA UMA NOVA TRANSAÇÃO
+  // ==============================================================
+  Future<Transaction> createTransaction({
+    required String type, // 'income' | 'expense'
     required double value,
     required String description,
     required String category,
-    required String date, // formato: 'YYYY-MM-DD'
-    String? expenseType, // 'fixas', 'variaveis', 'desnecessarios' (obrigatório se type='expense')
+    required DateTime date,
+    String? expenseType, // obrigatório se type == 'expense'
     bool hasReceipt = false,
   }) async {
     try {
@@ -25,28 +29,24 @@ class TransactionService {
         'value': value,
         'description': description,
         'category': category,
-        'date': date,
+        'expenseType': expenseType,
+        'date': date.toIso8601String(),
         'hasReceipt': hasReceipt,
       };
 
-      // Adiciona expenseType apenas se for despesa
-      if (type == 'expense' && expenseType != null) {
-        body['expenseType'] = expenseType;
-      }
+      final response = await dio.post(_endpoint, data: body);
 
-      final response = await _dio.post(
-        '$baseUrl/transactions',
-        data: body,
-      );
-
-      return response.data;
+      // Caso o backend retorne a transação no corpo
+      return Transaction.fromJson(response.data);
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
-  /// Lista transações do usuário
-  Future<Map<String, dynamic>> getTransactions({
+  // ==============================================================
+  // 📋 LISTA TODAS AS TRANSAÇÕES
+  // ==============================================================
+  Future<List<Transaction>> getTransactions({
     String? type,
     String? startDate,
     String? endDate,
@@ -56,455 +56,136 @@ class TransactionService {
     int limit = 20,
   }) async {
     try {
-      final queryParameters = <String, dynamic>{
-        'page': page,
-        'limit': limit,
+      final query = {
+        'Page': page,
+        'Limit': limit,
+        if (type != null) 'Type': type,
+        if (startDate != null) 'StartDate': startDate,
+        if (endDate != null) 'EndDate': endDate,
+        if (category != null) 'Category': category,
+        if (expenseType != null) 'ExpenseType': expenseType,
       };
 
-      if (type != null) queryParameters['type'] = type;
-      if (startDate != null) queryParameters['startDate'] = startDate;
-      if (endDate != null) queryParameters['endDate'] = endDate;
-      if (category != null) queryParameters['category'] = category;
-      if (expenseType != null) queryParameters['expenseType'] = expenseType;
+      final response = await dio.get(_endpoint, queryParameters: query);
 
-      final response = await _dio.get(
-        '$baseUrl/transactions',
-        queryParameters: queryParameters,
-      );
+      // Corrigido para acessar a lista dentro de data
+      final list = response.data['data']['transactions'] as List<dynamic>;
 
-      return response.data;
+      return list.map((t) => Transaction.fromJson(t)).toList();
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
-  /// Obtém uma transação específica por ID
-  Future<Map<String, dynamic>> getTransactionById(String id) async {
+  // ==============================================================
+  // 🔍 OBTÉM UMA TRANSAÇÃO POR ID
+  // ==============================================================
+  Future<Transaction> getTransactionById(String id) async {
     try {
-      final response = await _dio.get('$baseUrl/transactions/$id');
-      return response.data;
+      final response = await dio.get('$_endpoint/$id');
+      return Transaction.fromJson(response.data);
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
-  /// Atualiza uma transação
-  Future<Map<String, dynamic>> updateTransaction({
+  // ==============================================================
+  // ✏️ ATUALIZA UMA TRANSAÇÃO
+  // ==============================================================
+  Future<Transaction> updateTransaction({
     required String id,
     double? value,
     String? description,
     String? category,
-    String? date,
-    String? expenseType,
+    DateTime? date,
   }) async {
     try {
-      final body = <String, dynamic>{};
+      final body = {
+        if (value != null) 'value': value,
+        if (description != null) 'description': description,
+        if (category != null) 'category': category,
+        if (date != null) 'date': date.toIso8601String(),
+      };
 
-      if (value != null) body['value'] = value;
-      if (description != null) body['description'] = description;
-      if (category != null) body['category'] = category;
-      if (date != null) body['date'] = date;
-      if (expenseType != null) body['expenseType'] = expenseType;
+      final response = await dio.put('$_endpoint/$id', data: body);
 
-      final response = await _dio.put(
-        '$baseUrl/transactions/$id',
-        data: body,
-      );
-
-      return response.data;
+      return Transaction.fromJson(response.data);
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
-  /// Deleta uma transação
+  // ==============================================================
+  // 🗑️ DELETA UMA TRANSAÇÃO
+  // ==============================================================
   Future<void> deleteTransaction(String id) async {
     try {
-      await _dio.delete('$baseUrl/transactions/$id');
+      await dio.delete('$_endpoint/$id');
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
-  /// Obtém resumo financeiro
+  // ==============================================================
+  // 💰 OBTÉM RESUMO FINANCEIRO
+  // ==============================================================
   Future<Map<String, dynamic>> getFinancialSummary({
     String? startDate,
     String? endDate,
-    String? month, // formato: 'YYYY-MM'
+    String? month,
   }) async {
     try {
-      final queryParameters = <String, dynamic>{};
+      final query = {
+        if (startDate != null) 'startDate': startDate,
+        if (endDate != null) 'endDate': endDate,
+        if (month != null) 'month': month,
+      };
 
-      if (startDate != null) queryParameters['startDate'] = startDate;
-      if (endDate != null) queryParameters['endDate'] = endDate;
-      if (month != null) queryParameters['month'] = month;
-
-      final response = await _dio.get(
-        '$baseUrl/transactions/summary',
-        queryParameters: queryParameters,
+      final response = await dio.get(
+        '$_endpoint/summary',
+        queryParameters: query,
       );
-
-      return response.data;
+      return response.data is Map ? response.data : response.data['data'];
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
-  // ==================== OCR / RECIBOS ====================
-
-  /// Faz upload de um recibo e processa via OCR
-  Future<Map<String, dynamic>> uploadReceipt({
-    required Uint8List fileBytes,
-    required String fileName,
-    String? transactionId,
-  }) async {
-    try {
-      final formData = FormData.fromMap({
-        'file': MultipartFile.fromBytes(
-          fileBytes,
-          filename: fileName,
-        ),
-        if (transactionId != null) 'transactionId': transactionId,
-      });
-
-      final response = await _dio.post(
-        '$baseUrl/receipts/upload',
-        data: formData,
-        options: Options(
-          contentType: 'multipart/form-data',
-        ),
-      );
-
-      return response.data;
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  /// Processa OCR manualmente de um recibo
-  Future<Map<String, dynamic>> processOCR(String receiptId) async {
-    try {
-      final response = await _dio.post(
-        '$baseUrl/receipts/$receiptId/process-ocr',
-      );
-
-      return response.data;
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  /// Cria transação a partir dos dados do OCR
-  Future<Map<String, dynamic>> createTransactionFromReceipt({
-    required String receiptId,
-    String? category,
-    String? expenseType,
-    String? description,
-  }) async {
-    try {
-      final body = <String, dynamic>{};
-
-      if (category != null) body['category'] = category;
-      if (expenseType != null) body['expenseType'] = expenseType;
-      if (description != null) body['description'] = description;
-
-      final response = await _dio.post(
-        '$baseUrl/receipts/$receiptId/create-transaction',
-        data: body,
-      );
-
-      return response.data;
-    } on DioException catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  /// Upload e criação de transação em uma única operação
-  Future<Map<String, dynamic>> uploadReceiptAndCreateTransaction({
-    required Uint8List fileBytes,
-    required String fileName,
-    required String category,
-    required String expenseType,
-    String? description,
-  }) async {
-    try {
-      // 1. Upload do recibo
-      final uploadResult = await uploadReceipt(
-        fileBytes: fileBytes,
-        fileName: fileName,
-      );
-
-      final receiptId = uploadResult['data']['id'] as String;
-
-      // 2. Criar transação a partir do recibo
-      final transactionResult = await createTransactionFromReceipt(
-        receiptId: receiptId,
-        category: category,
-        expenseType: expenseType,
-        description: description,
-      );
-
-      return transactionResult;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  // ==================== TRATAMENTO DE ERROS ====================
-
+  // ==============================================================
+  // ⚠️ TRATAMENTO CENTRALIZADO DE ERROS
+  // ==============================================================
   Exception _handleError(DioException error) {
     if (error.response != null) {
       final data = error.response!.data;
-      final errorMessage = data['error']?['message'] ?? 'Erro desconhecido';
-      final errorCode = data['error']?['code'] ?? 'UNKNOWN_ERROR';
+      final message = data['message'] ?? 'Erro desconhecido';
+      final code = error.response!.statusCode?.toString() ?? 'UNKNOWN';
 
       switch (error.response!.statusCode) {
         case 400:
-          return BadRequestException(errorMessage, errorCode);
+          return ApiException('Requisição inválida: $message', code);
         case 401:
-          return UnauthorizedException(errorMessage);
+          return ApiException('Não autorizado: $message', 'UNAUTHORIZED');
         case 403:
-          return ForbiddenException(errorMessage);
+          return ApiException('Acesso negado: $message', 'FORBIDDEN');
         case 404:
-          return NotFoundException(errorMessage);
-        case 422:
-          return ValidationException(
-            errorMessage,
-            data['error']?['details'] ?? [],
-          );
+          return ApiException('Não encontrado: $message', 'NOT_FOUND');
         case 500:
-          return ServerException(errorMessage);
+          return ApiException('Erro interno do servidor', 'SERVER_ERROR');
         default:
-          return ApiException(errorMessage, errorCode);
+          return ApiException(message, code);
       }
-    } else if (error.type == DioExceptionType.connectionTimeout ||
-        error.type == DioExceptionType.receiveTimeout) {
-      return TimeoutException('Tempo de conexão esgotado');
-    } else if (error.type == DioExceptionType.connectionError) {
-      return NetworkException('Erro de conexão. Verifique sua internet.');
     } else {
-      return ApiException('Erro inesperado', 'UNKNOWN_ERROR');
+      return ApiException('Erro de conexão com o servidor', 'NETWORK_ERROR');
     }
   }
 }
 
-// ==================== EXCEÇÕES CUSTOMIZADAS ====================
-
+// ==============================================================
 class ApiException implements Exception {
   final String message;
   final String code;
-
   ApiException(this.message, this.code);
 
   @override
-  String toString() => message;
-}
-
-class BadRequestException extends ApiException {
-  BadRequestException(String message, String code) : super(message, code);
-}
-
-class UnauthorizedException extends ApiException {
-  UnauthorizedException(String message)
-      : super(message, 'AUTHENTICATION_ERROR');
-}
-
-class ForbiddenException extends ApiException {
-  ForbiddenException(String message)
-      : super(message, 'AUTHORIZATION_ERROR');
-}
-
-class NotFoundException extends ApiException {
-  NotFoundException(String message)
-      : super(message, 'RESOURCE_NOT_FOUND');
-}
-
-class ValidationException extends ApiException {
-  final List<dynamic> details;
-
-  ValidationException(String message, this.details)
-      : super(message, 'VALIDATION_ERROR');
-
-  String getFieldError(String fieldName) {
-    final fieldError = details.firstWhere(
-      (error) => error['field'] == fieldName,
-      orElse: () => null,
-    );
-    return fieldError?['message'] ?? '';
-  }
-}
-
-class ServerException extends ApiException {
-  ServerException(String message) : super(message, 'SERVER_ERROR');
-}
-
-class TimeoutException extends ApiException {
-  TimeoutException(String message) : super(message, 'TIMEOUT_ERROR');
-}
-
-class NetworkException extends ApiException {
-  NetworkException(String message) : super(message, 'NETWORK_ERROR');
-}
-
-// ==================== MODELOS DE DADOS ====================
-
-class Transaction {
-  final String id;
-  final String userId;
-  final String type; // 'income' ou 'expense'
-  final double value;
-  final String description;
-  final String category;
-  final String? expenseType;
-  final DateTime date;
-  final bool hasReceipt;
-  final String? receiptUrl;
-  final Map<String, dynamic>? receiptOcrData;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-
-  Transaction({
-    required this.id,
-    required this.userId,
-    required this.type,
-    required this.value,
-    required this.description,
-    required this.category,
-    this.expenseType,
-    required this.date,
-    required this.hasReceipt,
-    this.receiptUrl,
-    this.receiptOcrData,
-    required this.createdAt,
-    required this.updatedAt,
-  });
-
-  factory Transaction.fromJson(Map<String, dynamic> json) {
-    return Transaction(
-      id: json['id'],
-      userId: json['userId'],
-      type: json['type'],
-      value: (json['value'] as num).toDouble(),
-      description: json['description'],
-      category: json['category'],
-      expenseType: json['expenseType'],
-      date: DateTime.parse(json['date']),
-      hasReceipt: json['hasReceipt'],
-      receiptUrl: json['receiptUrl'],
-      receiptOcrData: json['receiptOcrData'],
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'userId': userId,
-      'type': type,
-      'value': value,
-      'description': description,
-      'category': category,
-      'expenseType': expenseType,
-      'date': date.toIso8601String().split('T')[0],
-      'hasReceipt': hasReceipt,
-      'receiptUrl': receiptUrl,
-      'receiptOcrData': receiptOcrData,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
-    };
-  }
-}
-
-class Receipt {
-  final String id;
-  final String? transactionId;
-  final String fileName;
-  final String fileUrl;
-  final int fileSize;
-  final String mimeType;
-  final bool ocrProcessed;
-  final OcrData? ocrData;
-  final DateTime createdAt;
-
-  Receipt({
-    required this.id,
-    this.transactionId,
-    required this.fileName,
-    required this.fileUrl,
-    required this.fileSize,
-    required this.mimeType,
-    required this.ocrProcessed,
-    this.ocrData,
-    required this.createdAt,
-  });
-
-  factory Receipt.fromJson(Map<String, dynamic> json) {
-    return Receipt(
-      id: json['id'],
-      transactionId: json['transactionId'],
-      fileName: json['fileName'],
-      fileUrl: json['fileUrl'],
-      fileSize: json['fileSize'],
-      mimeType: json['mimeType'],
-      ocrProcessed: json['ocrProcessed'],
-      ocrData: json['ocrData'] != null
-          ? OcrData.fromJson(json['ocrData'])
-          : null,
-      createdAt: DateTime.parse(json['createdAt']),
-    );
-  }
-}
-
-class OcrData {
-  final double? extractedValue;
-  final String? extractedDate;
-  final String? merchantName;
-  final List<ReceiptItem>? items;
-  final double confidence;
-
-  OcrData({
-    this.extractedValue,
-    this.extractedDate,
-    this.merchantName,
-    this.items,
-    required this.confidence,
-  });
-
-  factory OcrData.fromJson(Map<String, dynamic> json) {
-    return OcrData(
-      extractedValue: json['extractedValue']?.toDouble(),
-      extractedDate: json['extractedDate'],
-      merchantName: json['merchantName'],
-      items: json['items'] != null
-          ? (json['items'] as List)
-              .map((item) => ReceiptItem.fromJson(item))
-              .toList()
-          : null,
-      confidence: (json['confidence'] as num).toDouble(),
-    );
-  }
-}
-
-class ReceiptItem {
-  final String name;
-  final int quantity;
-  final double unitPrice;
-  final double totalPrice;
-
-  ReceiptItem({
-    required this.name,
-    required this.quantity,
-    required this.unitPrice,
-    required this.totalPrice,
-  });
-
-  factory ReceiptItem.fromJson(Map<String, dynamic> json) {
-    return ReceiptItem(
-      name: json['name'],
-      quantity: json['quantity'],
-      unitPrice: (json['unitPrice'] as num).toDouble(),
-      totalPrice: (json['totalPrice'] as num).toDouble(),
-    );
-  }
+  String toString() => '$message (code: $code)';
 }

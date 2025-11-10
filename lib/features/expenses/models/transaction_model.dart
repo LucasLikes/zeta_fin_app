@@ -1,66 +1,57 @@
+
 class Transaction {
   final String id;
+  final String userId;
   final String type; // 'income' ou 'expense'
   final double value;
   final String description;
   final String category;
+  final String? expenseType; // 'fixed', 'variable', 'unnecessary'
   final DateTime date;
-  final String? expenseType; // 'fixas', 'variaveis', 'desnecessarios'
   final bool hasReceipt;
   final String? receiptUrl;
-  final String userId;
+  final String? receiptOcrData;
   final DateTime createdAt;
   final DateTime updatedAt;
 
   Transaction({
     required this.id,
+    required this.userId,
     required this.type,
     required this.value,
     required this.description,
     required this.category,
-    required this.date,
     this.expenseType,
+    required this.date,
     this.hasReceipt = false,
     this.receiptUrl,
-    required this.userId,
+    this.receiptOcrData,
     required this.createdAt,
     required this.updatedAt,
   });
 
-  // ===== GETTERS ADICIONAIS =====
-  
-  /// Verifica se é uma receita
-  bool get isIncome => type == 'income';
+  // ===== GETTERS AUXILIARES =====
+  bool get isIncome => type.toLowerCase() == 'income';
+  bool get isExpense => type.toLowerCase() == 'expense';
 
-  /// Verifica se é uma despesa
-  bool get isExpense => type == 'expense';
+  bool get isFixedExpense => expenseType?.toLowerCase() == 'fixed';
+  bool get isVariableExpense => expenseType?.toLowerCase() == 'variable';
+  bool get isUnnecessaryExpense => expenseType?.toLowerCase() == 'unnecessary';
 
-  /// Verifica se é uma despesa fixa
-  bool get isFixedExpense => expenseType == 'fixas';
-
-  /// Verifica se é uma despesa variável
-  bool get isVariableExpense => expenseType == 'variaveis';
-
-  /// Verifica se é uma despesa desnecessária
-  bool get isUnnecessaryExpense => expenseType == 'desnecessarios';
-
-  // ===== FACTORY CONSTRUCTORS =====
-
-  /// Cria uma transação a partir de um JSON
+  // ===== FACTORY =====
   factory Transaction.fromJson(Map<String, dynamic> json) {
     return Transaction(
-      id: json['_id'] ?? json['id'] ?? '',
+      id: json['id'] ?? '',
+      userId: json['userId'] ?? '',
       type: json['type'] ?? '',
       value: (json['value'] ?? 0).toDouble(),
       description: json['description'] ?? '',
       category: json['category'] ?? '',
-      date: json['date'] != null 
-          ? DateTime.parse(json['date']) 
-          : DateTime.now(),
       expenseType: json['expenseType'],
+      date: json['date'] != null ? DateTime.parse(json['date']) : DateTime.now(),
       hasReceipt: json['hasReceipt'] ?? false,
       receiptUrl: json['receiptUrl'],
-      userId: json['userId'] ?? '',
+      receiptOcrData: json['receiptOcrData'],
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
           : DateTime.now(),
@@ -70,88 +61,68 @@ class Transaction {
     );
   }
 
-  /// Converte a transação para JSON
+  // ===== SERIALIZAÇÃO =====
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'userId': userId,
       'type': type,
       'value': value,
       'description': description,
       'category': category,
-      'date': date.toIso8601String(),
       'expenseType': expenseType,
+      'date': date.toIso8601String(),
       'hasReceipt': hasReceipt,
       'receiptUrl': receiptUrl,
-      'userId': userId,
+      'receiptOcrData': receiptOcrData,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
   }
 
-  /// Cria uma cópia da transação com campos atualizados
+  // ===== COPY =====
   Transaction copyWith({
     String? id,
+    String? userId,
     String? type,
     double? value,
     String? description,
     String? category,
-    DateTime? date,
     String? expenseType,
+    DateTime? date,
     bool? hasReceipt,
     String? receiptUrl,
-    String? userId,
+    String? receiptOcrData,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
     return Transaction(
       id: id ?? this.id,
+      userId: userId ?? this.userId,
       type: type ?? this.type,
       value: value ?? this.value,
       description: description ?? this.description,
       category: category ?? this.category,
-      date: date ?? this.date,
       expenseType: expenseType ?? this.expenseType,
+      date: date ?? this.date,
       hasReceipt: hasReceipt ?? this.hasReceipt,
       receiptUrl: receiptUrl ?? this.receiptUrl,
-      userId: userId ?? this.userId,
+      receiptOcrData: receiptOcrData ?? this.receiptOcrData,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
   @override
-  String toString() {
-    return 'Transaction(id: $id, type: $type, value: $value, description: $description, category: $category, date: $date, expenseType: $expenseType)';
-  }
+  String toString() => 'Transaction($id - $description: $value)';
 
   @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-  
-    return other is Transaction &&
-      other.id == id &&
-      other.type == type &&
-      other.value == value &&
-      other.description == description &&
-      other.category == category &&
-      other.date == date &&
-      other.expenseType == expenseType &&
-      other.hasReceipt == hasReceipt &&
-      other.receiptUrl == receiptUrl &&
-      other.userId == userId;
-  }
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Transaction &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
 
   @override
-  int get hashCode {
-    return id.hashCode ^
-      type.hashCode ^
-      value.hashCode ^
-      description.hashCode ^
-      category.hashCode ^
-      date.hashCode ^
-      expenseType.hashCode ^
-      hasReceipt.hashCode ^
-      receiptUrl.hashCode ^
-      userId.hashCode;
-  }
+  int get hashCode => id.hashCode;
 }

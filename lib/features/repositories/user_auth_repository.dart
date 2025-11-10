@@ -1,7 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
+import 'package:zeta_fin_app/features/goals/models/user_model.dart';
 import '../../core/services/dio_client.dart';
-import '../goals/models/user_model.dart';
 
 class AuthRepository {
   final DioClient dioClient;
@@ -14,7 +14,7 @@ class AuthRepository {
   Future<UserModel> login(String email, String password) async {
     try {
       final response = await dioClient.dio.post(
-        '/api/Auth/login',
+        '/Auth/login',
         data: {
           'email': email,
           'password': password,
@@ -46,7 +46,7 @@ class AuthRepository {
   Future<void> cadastrar(String name, String email, String password) async {
     try {
       final response = await dioClient.dio.post(
-        '/api/Users',
+        '/Users',
         data: {
           'name': name,
           'email': email,

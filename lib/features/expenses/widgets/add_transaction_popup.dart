@@ -144,46 +144,61 @@ class _AddTransactionPopupState extends State<AddTransactionPopup>
   }
 
   Future<void> _submitIncome() async {
-    if (_incomeValueController.text.isEmpty ||
-        _incomeDescriptionController.text.isEmpty ||
-        _selectedIncomeCategory == null ||
-        _incomeDateController.text.isEmpty) {
-      _showSnackBar('Por favor, preencha todos os campos', isError: true);
+  if (_incomeValueController.text.isEmpty ||
+      _incomeDescriptionController.text.isEmpty ||
+      _selectedIncomeCategory == null ||
+      _incomeDateController.text.isEmpty) {
+    _showSnackBar('Por favor, preencha todos os campos', isError: true);
+    return;
+  }
+
+  setState(() => _isLoading = true);
+
+  try {
+    final parsedValue =
+        double.tryParse(_incomeValueController.text.replaceAll(',', '.'));
+    if (parsedValue == null) {
+      _showSnackBar('Valor inválido', isError: true);
       return;
     }
 
-    setState(() => _isLoading = true);
+    // Preparar dados para enviar ao backend
+    final incomeData = {
+      'type': 0, // 0 = income, conforme seu backend
+      'value': parsedValue,
+      'description': _incomeDescriptionController.text,
+      'category': _selectedIncomeCategory,
+      'expenseType': null, // receita não possui tipo de despesa
+      'date': DateTime.parse(_incomeDateController.text).toIso8601String(),
+      'hasReceipt': false,
+      'userId': 'USER_ID_PLACEHOLDER', // Substituir pelo ID do usuário logado
+    };
 
-    try {
-      // Preparar dados para enviar ao backend
-      final incomeData = {
-        'type': 'income',
-        'value': double.parse(_incomeValueController.text.replaceAll(',', '.')),
-        'description': _incomeDescriptionController.text,
-        'category': _selectedIncomeCategory,
-        'date': _incomeDateController.text,
-        'userId': 'USER_ID_PLACEHOLDER', // Substituir pelo ID do usuário logado
-      };
+    // TODO: Chamar endpoint do backend
+    // Exemplo:
+    // await transactionController.createTransaction(
+    //   type: 'income',
+    //   value: parsedValue,
+    //   description: _incomeDescriptionController.text,
+    //   category: _selectedIncomeCategory!,
+    //   date: _incomeDateController.text,
+    // );
 
-      // TODO: Chamar endpoint do backend
-      // await _transactionController.createTransaction(...);
+    await Future.delayed(const Duration(seconds: 1)); // Simulação
 
-      await Future.delayed(const Duration(seconds: 1)); // Simulação
+    _showSnackBar('Receita adicionada com sucesso!', isError: false);
 
-      _showSnackBar('Receita adicionada com sucesso!', isError: false);
-      
-      // Fecha o diálogo e retorna true para indicar sucesso
-      if (mounted) {
-        Navigator.of(context).pop(true);
-      }
-    } catch (e) {
-      _showSnackBar('Erro ao adicionar receita: $e', isError: true);
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+    if (mounted) {
+      Navigator.of(context).pop(true); // Fecha o diálogo e retorna sucesso
+    }
+  } catch (e) {
+    _showSnackBar('Erro ao adicionar receita: $e', isError: true);
+  } finally {
+    if (mounted) {
+      setState(() => _isLoading = false);
     }
   }
+}
 
   Future<void> _submitExpense() async {
     if (_expenseValueController.text.isEmpty ||

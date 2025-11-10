@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:dio/dio.dart';
 import 'package:provider/provider.dart';
 import 'package:zeta_fin_app/core/routes/go_router.dart';
 import 'package:zeta_fin_app/core/services/dio_client.dart';
@@ -16,7 +15,7 @@ void main() async {
   final dioClient = DioClient();
   
   // Cria o TransactionService passando o Dio do DioClient
-  final transactionService = TransactionService(dio: dioClient.dio);
+  final transactionService = TransactionService(dioClient);
   
   final authController = AuthController(
     authRepository: AuthRepository(dioClient: dioClient),

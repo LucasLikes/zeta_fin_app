@@ -1,5 +1,4 @@
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 import 'package:zeta_fin_app/core/state/auth_state.dart';
 import 'package:zeta_fin_app/features/goals/screens/expenses/desktop/expenses_desktop_screen.dart';
 import 'package:zeta_fin_app/features/goals/screens/goal/desktop/goals_desktop.dart';
