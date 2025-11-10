@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'dio_client.dart';
-import '../../features/expenses/models/transaction_model.dart'; // ajuste o path se necessário
+import '../../features/expenses/models/transaction_model.dart';
 
 class TransactionService {
   final DioClient _client;
@@ -20,25 +20,48 @@ class TransactionService {
     required String description,
     required String category,
     required DateTime date,
-    String? expenseType, // obrigatório se type == 'expense'
+    String? expenseType, // 'fixas' | 'variaveis' | 'desnecessarios'
     bool hasReceipt = false,
   }) async {
     try {
+      // Mapeia os valores para os enums corretos do backend
+      int typeEnum = type.toLowerCase() == 'income' ? 0 : 1;
+      
+      int? expenseTypeEnum;
+      if (expenseType != null) {
+        if (expenseType == 'fixas') {
+          expenseTypeEnum = 0; // Fixas
+        } else if (expenseType == 'variaveis') {
+          expenseTypeEnum = 1; // Variaveis
+        } else if (expenseType == 'desnecessarios') {
+          expenseTypeEnum = 2; // Desnecessarios
+        }
+      }
+
       final body = {
-        'type': type,
+        'type': typeEnum,
         'value': value,
         'description': description,
         'category': category,
-        'expenseType': expenseType,
+        'expenseType': expenseTypeEnum,
         'date': date.toIso8601String(),
         'hasReceipt': hasReceipt,
       };
 
+      print('📤 Enviando transação: $body'); // Debug
+
       final response = await dio.post(_endpoint, data: body);
 
-      // Caso o backend retorne a transação no corpo
+      print('✅ Resposta recebida: ${response.data}'); // Debug
+
+      // Caso o backend retorne a transação dentro de 'data'
+      if (response.data['data'] != null) {
+        return Transaction.fromJson(response.data['data']);
+      }
+      
       return Transaction.fromJson(response.data);
     } on DioException catch (e) {
+      print('❌ Erro ao criar transação: ${e.response?.data}'); // Debug
       throw _handleError(e);
     }
   }
@@ -68,7 +91,7 @@ class TransactionService {
 
       final response = await dio.get(_endpoint, queryParameters: query);
 
-      // Corrigido para acessar a lista dentro de data
+      // A resposta vem dentro de data.transactions
       final list = response.data['data']['transactions'] as List<dynamic>;
 
       return list.map((t) => Transaction.fromJson(t)).toList();
@@ -83,6 +106,11 @@ class TransactionService {
   Future<Transaction> getTransactionById(String id) async {
     try {
       final response = await dio.get('$_endpoint/$id');
+      
+      if (response.data['data'] != null) {
+        return Transaction.fromJson(response.data['data']);
+      }
+      
       return Transaction.fromJson(response.data);
     } on DioException catch (e) {
       throw _handleError(e);
@@ -109,6 +137,10 @@ class TransactionService {
 
       final response = await dio.put('$_endpoint/$id', data: body);
 
+      if (response.data['data'] != null) {
+        return Transaction.fromJson(response.data['data']);
+      }
+      
       return Transaction.fromJson(response.data);
     } on DioException catch (e) {
       throw _handleError(e);
@@ -145,7 +177,13 @@ class TransactionService {
         '$_endpoint/summary',
         queryParameters: query,
       );
-      return response.data is Map ? response.data : response.data['data'];
+      
+      // A resposta pode vir diretamente ou dentro de 'data'
+      if (response.data['data'] != null) {
+        return response.data['data'] as Map<String, dynamic>;
+      }
+      
+      return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
       throw _handleError(e);
     }
@@ -157,7 +195,7 @@ class TransactionService {
   Exception _handleError(DioException error) {
     if (error.response != null) {
       final data = error.response!.data;
-      final message = data['message'] ?? 'Erro desconhecido';
+      final message = data['message'] ?? data['error']?['message'] ?? 'Erro desconhecido';
       final code = error.response!.statusCode?.toString() ?? 'UNKNOWN';
 
       switch (error.response!.statusCode) {

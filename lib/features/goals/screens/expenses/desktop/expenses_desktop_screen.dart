@@ -440,15 +440,15 @@ class _ExpensesDesktopScreenState extends State<ExpensesDesktopScreen> {
     );
   }
 
-  // 📊 BREAKDOWN DE DESPESAS - CORRIGIDO
+  // 📊 BREAKDOWN DE DESPESAS - SOMENTE DADOS REAIS
   Widget _buildExpensesBreakdown(TransactionController controller) {
     final summary = controller.summary;
     
-    // Pega os valores do summary ou usa defaults
-    final contasFixas = summary?['expense']?['byType']?['fixas'] ?? 2050.00;
-    final contasVariaveis = summary?['expense']?['byType']?['variaveis'] ?? 1870.00;
-    final desnecessarios = summary?['expense']?['byType']?['desnecessarios'] ?? 400.00;
-    final renda = summary?['income']?['total'] ?? 8000.00;
+    // Pega os valores REAIS do summary, se não houver retorna 0
+    final contasFixas = summary?['expense']?['byType']?['fixas']?.toDouble() ?? 0.0;
+    final contasVariaveis = summary?['expense']?['byType']?['variaveis']?.toDouble() ?? 0.0;
+    final desnecessarios = summary?['expense']?['byType']?['desnecessarios']?.toDouble() ?? 0.0;
+    final renda = summary?['income']?['total']?.toDouble() ?? 0.0;
     
     return Container(
       padding: const EdgeInsets.all(24),
